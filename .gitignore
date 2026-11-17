@@ -1,0 +1,25 @@
+# Dependencias y compilados
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Cliente de Prisma generado
+apps/api/src/generated/
+
+# Variables de entorno (nunca se suben)
+.env
+.env.*
+!.env.example
+
+# Pruebas E2E
+playwright-report/
+test-results/
+
+# Editores y sistema
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.log

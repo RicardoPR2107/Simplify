@@ -1,0 +1,51 @@
+{
+  "name": "simplify",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Simplify: aplicación web de finanzas personales para registrar, organizar y analizar ingresos y gastos.",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": "^22.22.2 || >=24.15.0"
+  },
+  "scripts": {
+    "dev": "npm run build -w @simplify/shared && concurrently -n shared,api,web -c gray,green,cyan \"npm run dev -w @simplify/shared\" \"npm run dev -w @simplify/api\" \"npm run dev -w @simplify/web\"",
+    "build": "npm run build -w @simplify/shared && npm run build -w @simplify/api && npm run build -w @simplify/web",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "npm run build -w @simplify/shared && npm run typecheck --workspaces --if-present",
+    "test": "npm run build -w @simplify/shared && npm run test --workspaces --if-present",
+    "db:up": "docker compose up -d db db_test",
+    "db:down": "docker compose down",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml,css,html}": "prettier --write"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.20.5",
+    "concurrently": "^10.0.7",
+    "eslint": "^10.15.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.14.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.1",
+    "prettier": "^3.10.1",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.2"
+  },
+  "allowScripts": {
+    "prisma@7.10.1": true,
+    "@prisma/engines@7.10.1": true,
+    "esbuild@0.28.2": true
+  }
+}

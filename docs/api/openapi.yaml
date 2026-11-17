@@ -1,0 +1,367 @@
+openapi: 3.1.0
+info:
+  title: Simplify API
+  version: 0.1.0
+  description: |
+    API REST de Simplify. Contrato inicial (Fase 0): los endpoints marcados como
+    "planificado" se implementan en las Fases 1 y 2.
+
+    - Autenticación: cookies httpOnly (ver docs/adr/0002). Las rutas protegidas
+      responden 401 sin sesión válida.
+    - Importes: siempre texto con hasta 2 decimales, por ejemplo "85.50" (docs/adr/0003).
+    - Fechas: texto AAAA-MM-DD.
+    - Aislamiento: un usuario solo ve sus propios datos; un id ajeno responde 404.
+servers:
+  - url: /api/v1
+tags:
+  - name: health
+  - name: auth
+  - name: profile
+  - name: categories
+  - name: movements
+  - name: summary
+
+paths:
+  /health/live:
+    get:
+      tags: [health]
+      summary: El proceso está vivo
+      responses:
+        '200':
+          description: OK
+  /health/ready:
+    get:
+      tags: [health]
+      summary: La instancia puede atender tráfico (la usa el balanceador)
+      responses:
+        '200':
+          description: Base de datos disponible
+        '503':
+          description: Base de datos no disponible; el balanceador saca la instancia
+
+  /auth/register:
+    post:
+      tags: [auth]
+      summary: Crear cuenta (RF-01) — planificado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterInput' }
+      responses:
+        '201': { description: Cuenta creada e iniciada la sesión }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Iniciar sesión (RF-02) — planificado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginInput' }
+      responses:
+        '200': { description: Sesión iniciada; se envían las cookies }
+        '401': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+  /auth/refresh:
+    post:
+      tags: [auth]
+      summary: Renovar el token de acceso — planificado
+      responses:
+        '204': { description: Cookies renovadas }
+        '401': { $ref: '#/components/responses/Error' }
+  /auth/logout:
+    post:
+      tags: [auth]
+      summary: Cerrar sesión (RF-03) — planificado
+      responses:
+        '204': { description: Sesión cerrada }
+
+  /me:
+    get:
+      tags: [profile]
+      summary: Perfil del usuario (RF-04) — planificado
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+    patch:
+      tags: [profile]
+      summary: Cambiar nombre o moneda (RF-04, RF-18) — planificado
+      responses:
+        '200': { description: Perfil actualizado }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /categories:
+    get:
+      tags: [categories]
+      summary: Listar categorías (RF-10) — planificado
+      parameters:
+        - { name: type, in: query, schema: { $ref: '#/components/schemas/MovementType' } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Category' }
+    post:
+      tags: [categories]
+      summary: Crear categoría (RF-10) — planificado
+      responses:
+        '201': { description: Creada }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /categories/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    patch:
+      tags: [categories]
+      summary: Renombrar categoría — planificado
+      responses:
+        '200': { description: Actualizada }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [categories]
+      summary: Eliminar categoría (RN-09) — planificado
+      description: Si tiene movimientos, exige `reassignTo` y los mueve en una transacción.
+      parameters:
+        - { name: reassignTo, in: query, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Eliminada }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /movements:
+    get:
+      tags: [movements]
+      summary: Historial paginado y filtrable (RF-07, RF-11, RF-12, RF-13) — planificado
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - {
+            name: pageSize,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 50, default: 10 },
+          }
+        - { name: type, in: query, schema: { $ref: '#/components/schemas/MovementType' } }
+        - { name: categoryId, in: query, schema: { type: string, format: uuid } }
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+        - { name: q, in: query, schema: { type: string, maxLength: 60 } }
+        - { name: sortBy, in: query, schema: { type: string, enum: [date, amount], default: date } }
+        - { name: order, in: query, schema: { type: string, enum: [asc, desc], default: desc } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MovementPage' }
+    post:
+      tags: [movements]
+      summary: Registrar ingreso o gasto (RF-05, RF-06) — planificado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MovementInput' }
+      responses:
+        '201':
+          description: Creado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Movement' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '422': { $ref: '#/components/responses/Error' }
+  /movements/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [movements]
+      summary: Consultar un movimiento — planificado
+      responses:
+        '200': { description: OK }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [movements]
+      summary: Editar movimiento (RF-08) — planificado
+      responses:
+        '200': { description: Actualizado }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [movements]
+      summary: Eliminar movimiento (RF-09) — planificado
+      responses:
+        '204': { description: Eliminado }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /summary/month:
+    get:
+      tags: [summary]
+      summary: Ingresos, gastos y balance del mes (RF-14, RF-15, RF-17) — planificado
+      parameters:
+        - $ref: '#/components/parameters/Year'
+        - $ref: '#/components/parameters/Month'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  income: { $ref: '#/components/schemas/Amount' }
+                  expense: { $ref: '#/components/schemas/Amount' }
+                  balance: { type: string, example: '1050.00', description: 'Puede ser negativo.' }
+  /summary/categories:
+    get:
+      tags: [summary]
+      summary: Gastos agrupados por categoría — planificado
+      parameters:
+        - $ref: '#/components/parameters/Year'
+        - $ref: '#/components/parameters/Month'
+      responses:
+        '200': { description: OK }
+  /summary/evolution:
+    get:
+      tags: [summary]
+      summary: Ingresos y gastos de los últimos 6 meses (RF-16) — planificado
+      responses:
+        '200': { description: OK }
+
+components:
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    Year:
+      name: year
+      in: query
+      required: true
+      schema: { type: integer, minimum: 2000, maximum: 2100 }
+    Month:
+      name: month
+      in: query
+      required: true
+      schema: { type: integer, minimum: 1, maximum: 12 }
+
+  responses:
+    Error:
+      description: Error con código
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    ValidationError:
+      description: Datos inválidos; `fields` trae los mensajes por campo
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: No existe o pertenece a otro usuario
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Conflict:
+      description: Conflicto con el estado actual
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    MovementType:
+      type: string
+      enum: [INCOME, EXPENSE]
+    Amount:
+      type: string
+      pattern: '^\d{1,10}(\.\d{1,2})?$'
+      example: '85.50'
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum:
+                - VALIDATION_ERROR
+                - PAYLOAD_TOO_LARGE
+                - UNAUTHENTICATED
+                - INVALID_CREDENTIALS
+                - EMAIL_ALREADY_REGISTERED
+                - TOO_MANY_ATTEMPTS
+                - CSRF_TOKEN_INVALID
+                - FORBIDDEN
+                - NOT_FOUND
+                - CATEGORY_TYPE_MISMATCH
+                - CATEGORY_IN_USE
+                - CATEGORY_ALREADY_EXISTS
+                - SERVICE_UNAVAILABLE
+                - INTERNAL_ERROR
+            message: { type: string }
+            requestId: { type: string }
+            fields:
+              type: object
+              additionalProperties:
+                type: array
+                items: { type: string }
+    RegisterInput:
+      type: object
+      required: [name, email, password]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 60 }
+        email: { type: string, format: email }
+        password: { type: string, minLength: 10, maxLength: 128 }
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        email: { type: string, format: email }
+        currency: { type: string, enum: [USD, PEN, EUR, MXN, COP] }
+    Category:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        type: { $ref: '#/components/schemas/MovementType' }
+        isDefault: { type: boolean }
+    MovementInput:
+      type: object
+      required: [type, description, amount, categoryId, date]
+      properties:
+        type: { $ref: '#/components/schemas/MovementType' }
+        description: { type: string, minLength: 2, maxLength: 120 }
+        amount: { $ref: '#/components/schemas/Amount' }
+        categoryId: { type: string, format: uuid }
+        date: { type: string, format: date }
+        notes: { type: string, maxLength: 500 }
+    Movement:
+      allOf:
+        - $ref: '#/components/schemas/MovementInput'
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+            category: { $ref: '#/components/schemas/Category' }
+    MovementPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Movement' }
+        page: { type: integer }
+        pageSize: { type: integer }
+        total: { type: integer }
+        totalPages: { type: integer }

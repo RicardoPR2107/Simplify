@@ -1,0 +1,4 @@
+# Fuerza saltos de línea LF en el repositorio aunque se trabaje en Windows.
+* text=auto eol=lf
+*.png binary
+*.ico binary

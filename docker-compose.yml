@@ -1,0 +1,40 @@
+# Bases de datos para desarrollo y pruebas.
+# Fase 6 añadirá docker-compose.prod.yml con Nginx + 2 instancias de la API.
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: simplify-db
+    environment:
+      POSTGRES_USER: simplify
+      POSTGRES_PASSWORD: simplify_dev
+      POSTGRES_DB: simplify
+    ports:
+      - '5434:5432'
+    volumes:
+      - simplify-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U simplify -d simplify']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  db_test:
+    image: postgres:17-alpine
+    container_name: simplify-db-test
+    environment:
+      POSTGRES_USER: simplify
+      POSTGRES_PASSWORD: simplify_test
+      POSTGRES_DB: simplify_test
+    ports:
+      - '5433:5432'
+    # Los datos de prueba viven en memoria: se borran al apagar el contenedor.
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U simplify -d simplify_test']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  simplify-db-data:

@@ -1,0 +1,107 @@
+@import 'tailwindcss';
+
+/* El modo oscuro se activa con la clase .dark en <html> (la controla useTheme). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Tokens de diseño: Paleta B — Minimalismo, verde bosque #134A33 + lima #B8D86B. */
+:root {
+  --bg: #f4f7f2;
+  --card: #ffffff;
+  --border: #e2e9df;
+  --sage: #e3efd3;
+  --tint: #eef6e3;
+  --faint: #eff3ec;
+  --hero: #134a33;
+  --on-hero: #ffffff;
+  --accent: #2e6b52;
+  --lime: #b8d86b;
+  --text: #1c2a22;
+  --muted: #5a665e;
+  --sidebar: #134a33;
+  --sidebar-text: #ffffff;
+  --sidebar-active: rgb(184 216 107 / 0.22);
+  --sidebar-hover: rgb(255 255 255 / 0.08);
+  --sidebar-line: rgb(255 255 255 / 0.14);
+  --cta: #b8d86b;
+  --cta-text: #134a33;
+  --income: #2e6b52;
+  --income-bg: #e5f1da;
+  --expense: #a4553a;
+  --expense-bg: #f6e7e0;
+  --ring: #2e6b52;
+}
+
+.dark {
+  --bg: #0f1612;
+  --card: #17211b;
+  --border: #26332b;
+  --sage: #1f3328;
+  --tint: #1a2a21;
+  --faint: #1d2922;
+  --hero: #b8d86b;
+  --on-hero: #10291d;
+  --accent: #b8d86b;
+  --lime: #b8d86b;
+  --text: #e6eee8;
+  --muted: #a0ada4;
+  --sidebar: #0c2a1d;
+  --sidebar-text: #e6eee8;
+  --sidebar-active: rgb(184 216 107 / 0.16);
+  --sidebar-hover: rgb(255 255 255 / 0.06);
+  --sidebar-line: rgb(255 255 255 / 0.1);
+  --cta: #b8d86b;
+  --cta-text: #10291d;
+  --income: #b8d86b;
+  --income-bg: #223a28;
+  --expense: #e3a184;
+  --expense-bg: #362720;
+  --ring: #b8d86b;
+}
+
+@theme inline {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-line: var(--border);
+  --color-sage: var(--sage);
+  --color-tint: var(--tint);
+  --color-faint: var(--faint);
+  --color-hero: var(--hero);
+  --color-on-hero: var(--on-hero);
+  --color-accent: var(--accent);
+  --color-lime: var(--lime);
+  --color-ink: var(--text);
+  --color-muted: var(--muted);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-text: var(--sidebar-text);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-hover: var(--sidebar-hover);
+  --color-sidebar-line: var(--sidebar-line);
+  --color-cta: var(--cta);
+  --color-cta-text: var(--cta-text);
+  --color-income: var(--income);
+  --color-income-bg: var(--income-bg);
+  --color-expense: var(--expense);
+  --color-expense-bg: var(--expense-bg);
+  --radius-card: 24px;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-bg text-ink font-sans antialiased;
+  }
+  /* Foco siempre visible al navegar con teclado (accesibilidad 5.5). */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
