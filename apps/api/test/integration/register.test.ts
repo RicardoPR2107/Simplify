@@ -2,12 +2,16 @@ import request from 'supertest';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { argon2Hasher } from '../../src/lib/password.js';
 import { PrismaUserRepository } from '../../src/modules/auth/auth.repository.js';
+import { PrismaRefreshTokenRepository } from '../../src/modules/auth/refresh-token.repository.js';
 import { buildTestApp } from '../helpers.js';
 import { createTestPrisma, resetData } from './database.js';
 
 const prisma = createTestPrisma();
 const app = buildTestApp({
-  repositories: { users: new PrismaUserRepository(prisma) },
+  repositories: {
+    users: new PrismaUserRepository(prisma),
+    refreshTokens: new PrismaRefreshTokenRepository(prisma),
+  },
   passwordHasher: argon2Hasher,
 });
 const body = { name: 'Ricardo', email: 'ricardo@example.com', password: 'Clave#Segura123' };

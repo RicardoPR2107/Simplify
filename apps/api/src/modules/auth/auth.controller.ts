@@ -1,13 +1,62 @@
 import type { Request, Response } from 'express';
-import type { RegisterInput } from '@simplify/shared';
+import type { LoginInput, RegisterInput } from '@simplify/shared';
 import type { AuthService } from './auth.service.js';
+import { clearSessionCookies, REFRESH_COOKIE, setSessionCookies } from './cookies.js';
+import type { SessionService } from './session.service.js';
 
-/** Capa Controller: traduce HTTP ↔ servicio. Recibe datos ya validados por el middleware `validate`. */
+/** Capa Controller: traduce HTTP ↔ servicios. Recibe datos ya validados por el middleware `validate`. */
 export class AuthController {
-  constructor(private readonly service: AuthService) {}
+  constructor(
+    private readonly auth: AuthService,
+    private readonly sessions: SessionService,
+    private readonly secureCookies: boolean,
+  ) {}
 
+  /** RF-01: crea la cuenta e inicia la sesión. */
   register = async (req: Request, res: Response): Promise<void> => {
-    const user = await this.service.register(req.validated?.body as RegisterInput);
+    const user = await this.auth.register(req.validated?.body as RegisterInput);
+    const tokens = await this.sessions.start(user.id, req.get('user-agent'));
+    setSessionCookies(res, tokens, this.secureCookies);
     res.status(201).json({ user });
   };
+
+  /** RF-02 */
+  login = async (req: Request, res: Response): Promise<void> => {
+    const user = await this.auth.login(req.validated?.body as LoginInput);
+    const tokens = await this.sessions.start(user.id, req.get('user-agent'));
+    setSessionCookies(res, tokens, this.secureCookies);
+    res.json({ user });
+  };
+
+  /** Renueva la sesión con el token de renovación (lo llama el frontend cuando el de acceso vence). */
+  refresh = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { tokens } = await this.sessions.rotate(
+        cookie(req, REFRESH_COOKIE),
+        req.get('user-agent'),
+      );
+      setSessionCookies(res, tokens, this.secureCookies);
+      res.status(204).end();
+    } catch (err) {
+      clearSessionCookies(res, this.secureCookies);
+      throw err;
+    }
+  };
+
+  /** RF-03 */
+  logout = async (req: Request, res: Response): Promise<void> => {
+    await this.sessions.end(cookie(req, REFRESH_COOKIE));
+    clearSessionCookies(res, this.secureCookies);
+    res.status(204).end();
+  };
+
+  /** Perfil del usuario autenticado (`requireAuth` ya dejó `req.userId`). */
+  me = async (req: Request, res: Response): Promise<void> => {
+    res.json({ user: await this.auth.getProfile(req.userId!) });
+  };
+}
+
+function cookie(req: Request, name: string): string | undefined {
+  const value: unknown = req.cookies?.[name];
+  return typeof value === 'string' ? value : undefined;
 }

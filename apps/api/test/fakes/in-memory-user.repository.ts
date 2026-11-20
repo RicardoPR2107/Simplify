@@ -15,6 +15,10 @@ export class InMemoryUserRepository implements UserRepository {
     return this.users.find((user) => user.email === email) ?? null;
   }
 
+  async findById(id: string): Promise<UserRecord | null> {
+    return this.users.find((user) => user.id === id) ?? null;
+  }
+
   async createWithDefaultCategories(data: NewUser): Promise<UserRecord> {
     if (this.users.some((user) => user.email === data.email)) {
       throw new AppError(ErrorCode.EMAIL_ALREADY_REGISTERED);

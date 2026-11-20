@@ -20,6 +20,7 @@ export interface NewUser {
 /** Capa Repository: única parte del módulo que habla con la base de datos. */
 export interface UserRepository {
   findByEmail(email: string): Promise<UserRecord | null>;
+  findById(id: string): Promise<UserRecord | null>;
   /** Crea el usuario y sus categorías predeterminadas en una sola operación atómica. */
   createWithDefaultCategories(data: NewUser): Promise<UserRecord>;
 }
@@ -37,6 +38,10 @@ export class PrismaUserRepository implements UserRepository {
 
   findByEmail(email: string): Promise<UserRecord | null> {
     return this.prisma.user.findUnique({ where: { email }, select: USER_FIELDS });
+  }
+
+  findById(id: string): Promise<UserRecord | null> {
+    return this.prisma.user.findUnique({ where: { id }, select: USER_FIELDS });
   }
 
   async createWithDefaultCategories(data: NewUser): Promise<UserRecord> {

@@ -5,14 +5,13 @@ import express, { type Express } from 'express';
 import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
 import type { Logger } from 'pino';
-import type { Env } from './config/env.js';
-import { buildControllers, type Dependencies } from './container.js';
+import { buildControllers, type AppConfig, type Dependencies } from './container.js';
 import { errorHandler, notFoundHandler } from './middlewares/error-handler.js';
-import { createAuthRouter } from './modules/auth/auth.router.js';
+import { createAuthRouter, createMeRouter } from './modules/auth/auth.router.js';
 import { createHealthRouter } from './modules/health/health.router.js';
 
 export interface AppOptions {
-  env: Pick<Env, 'NODE_ENV' | 'CORS_ORIGIN'>;
+  env: AppConfig;
   logger: Logger;
   deps: Dependencies;
 }
@@ -23,7 +22,7 @@ export interface AppOptions {
  */
 export function createApp({ env, logger, deps }: AppOptions): Express {
   const app = express();
-  const controllers = buildControllers(deps);
+  const controllers = buildControllers(deps, env);
 
   // Detrás de Nginx (Fase 6): confía en el primer proxy para leer la IP real del cliente.
   app.set('trust proxy', 1);
@@ -59,6 +58,7 @@ export function createApp({ env, logger, deps }: AppOptions): Express {
   // 4. Rutas versionadas.
   app.use('/api/v1/health', createHealthRouter(controllers.health));
   app.use('/api/v1/auth', createAuthRouter(controllers.auth));
+  app.use('/api/v1/me', createMeRouter(controllers.auth, controllers.requireAuth));
 
   // 5. Errores: siempre al final.
   app.use(notFoundHandler);

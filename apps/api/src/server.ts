@@ -4,6 +4,7 @@ import { createLogger } from './lib/logger.js';
 import { argon2Hasher } from './lib/password.js';
 import { createPrismaClient } from './lib/prisma.js';
 import { PrismaUserRepository } from './modules/auth/auth.repository.js';
+import { PrismaRefreshTokenRepository } from './modules/auth/refresh-token.repository.js';
 
 const env = loadEnv();
 const logger = createLogger(env);
@@ -27,6 +28,7 @@ const app = createApp({
     },
     repositories: {
       users: new PrismaUserRepository(prisma),
+      refreshTokens: new PrismaRefreshTokenRepository(prisma),
     },
     passwordHasher: argon2Hasher,
   },
