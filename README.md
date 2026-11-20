@@ -27,7 +27,7 @@ Aplicación web full stack de finanzas personales para registrar, organizar y an
 
 Las marcadas con 🚧 están en construcción.
 
-- 🚧 **Crear una cuenta** con una contraseña segura (mínimo 10 caracteres, con letras y números).
+- 🚧 **Crear una cuenta** con una contraseña segura (mínimo 8 caracteres, con mayúscula, minúscula, número y carácter especial).
 - 🚧 **Iniciar y cerrar sesión**, con la sesión guardada en cookies protegidas y límite de intentos.
 - 🚧 **Registrar ingresos y gastos** con descripción, importe, categoría, fecha y notas. El importe siempre es positivo: la app decide si suma o resta según el tipo.
 - 🚧 **Organizar en categorías** propias o predeterminadas. Una categoría con movimientos no se puede eliminar sin reasignarlos antes.

@@ -8,6 +8,7 @@ import type { Logger } from 'pino';
 import type { Env } from './config/env.js';
 import { buildControllers, type Dependencies } from './container.js';
 import { errorHandler, notFoundHandler } from './middlewares/error-handler.js';
+import { createAuthRouter } from './modules/auth/auth.router.js';
 import { createHealthRouter } from './modules/health/health.router.js';
 
 export interface AppOptions {
@@ -57,6 +58,7 @@ export function createApp({ env, logger, deps }: AppOptions): Express {
 
   // 4. Rutas versionadas.
   app.use('/api/v1/health', createHealthRouter(controllers.health));
+  app.use('/api/v1/auth', createAuthRouter(controllers.auth));
 
   // 5. Errores: siempre al final.
   app.use(notFoundHandler);

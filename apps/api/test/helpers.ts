@@ -1,11 +1,15 @@
 import { pino } from 'pino';
 import { createApp } from '../src/app.js';
 import type { Dependencies } from '../src/container.js';
+import { fakePasswordHasher } from './fakes/fake-password-hasher.js';
+import { InMemoryUserRepository } from './fakes/in-memory-user.repository.js';
 
 /** Crea la app con dependencias simuladas (dobles de prueba) y sin logs. */
 export function buildTestApp(overrides: Partial<Dependencies> = {}) {
   const deps: Dependencies = {
     database: { ping: async () => true },
+    repositories: { users: new InMemoryUserRepository() },
+    passwordHasher: fakePasswordHasher,
     ...overrides,
   };
   return createApp({

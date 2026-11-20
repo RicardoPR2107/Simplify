@@ -42,14 +42,25 @@ paths:
   /auth/register:
     post:
       tags: [auth]
-      summary: Crear cuenta (RF-01) — planificado
+      summary: Crear cuenta (RF-01)
+      description: |
+        Crea la cuenta con la contraseña cifrada con Argon2id y las 11 categorías
+        predeterminadas, en una sola transacción. El correo se guarda en minúsculas.
+        Los campos extra del cuerpo (por ejemplo `id` o `currency`) se ignoran.
       requestBody:
         required: true
         content:
           application/json:
             schema: { $ref: '#/components/schemas/RegisterInput' }
       responses:
-        '201': { description: Cuenta creada e iniciada la sesión }
+        '201':
+          description: Cuenta creada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/User' }
         '400': { $ref: '#/components/responses/ValidationError' }
         '409': { $ref: '#/components/responses/Conflict' }
   /auth/login:
@@ -317,7 +328,11 @@ components:
       properties:
         name: { type: string, minLength: 2, maxLength: 60 }
         email: { type: string, format: email }
-        password: { type: string, minLength: 10, maxLength: 128 }
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+          description: Debe incluir minúscula, mayúscula, número y carácter especial.
     LoginInput:
       type: object
       required: [email, password]
