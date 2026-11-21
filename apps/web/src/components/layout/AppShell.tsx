@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
-import { Link, NavLink, Outlet } from 'react-router';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router';
+import { useCurrentUser, useLogout } from '../../features/auth/useAuth';
 import { useSidebar } from '../../hooks/useSidebar';
 import { useTheme } from '../../hooks/useTheme';
 import { BrandLogo } from '../brand/Logo';
@@ -9,6 +10,7 @@ import {
   ChartIcon,
   DashboardIcon,
   HistoryIcon,
+  LogOutIcon,
   MoonIcon,
   PlusIcon,
   SettingsIcon,
@@ -28,12 +30,19 @@ const NAV_ITEMS = [
  * Estructura común de las pantallas autenticadas, a pantalla completa:
  * - Escritorio y tablet: menú lateral verde de alto completo, que se contrae a solo íconos.
  * - Móvil: cabecera con logo y barra de navegación flotante abajo.
- * - Barra superior: acciones globales (tema; en la Fase 1, menú de usuario).
+ * - Barra superior: acciones globales (usuario, cerrar sesión y tema).
  */
 export function AppShell() {
   const { theme, toggleTheme } = useTheme();
   const { collapsed, toggle } = useSidebar();
   const dark = theme === 'dark';
+  const { data: user } = useCurrentUser();
+  const logout = useLogout();
+  const navigate = useNavigate();
+
+  function onLogout() {
+    logout.mutate(undefined, { onSettled: () => navigate('/iniciar-sesion', { replace: true }) });
+  }
 
   /*
    * Todas las filas del menú comparten la misma columna de íconos (16 px desde el borde):
@@ -113,15 +122,38 @@ export function AppShell() {
           <Link to="/" aria-label="Simplify, ir al dashboard" className="rounded-xl md:hidden">
             <BrandLogo variant={dark ? 'dark' : 'light'} />
           </Link>
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label={dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-            title={dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-            className="flex size-11 items-center justify-center rounded-full border border-line bg-card text-ink hover:bg-faint"
-          >
-            {dark ? <SunIcon /> : <MoonIcon />}
-          </button>
+          <div className="flex items-center gap-2">
+            {user && (
+              <div className="hidden items-center gap-3 pr-2 sm:flex">
+                <span
+                  aria-hidden="true"
+                  className="flex size-9 items-center justify-center rounded-full bg-sage font-semibold text-accent"
+                >
+                  {user.name.charAt(0).toUpperCase()}
+                </span>
+                <span className="max-w-40 truncate text-sm font-medium">{user.name}</span>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={onLogout}
+              disabled={logout.isPending}
+              aria-label="Cerrar sesión"
+              title="Cerrar sesión"
+              className="flex size-11 items-center justify-center rounded-full border border-line bg-card text-ink hover:bg-faint disabled:opacity-60"
+            >
+              <LogOutIcon />
+            </button>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+              title={dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+              className="flex size-11 items-center justify-center rounded-full border border-line bg-card text-ink hover:bg-faint"
+            >
+              {dark ? <SunIcon /> : <MoonIcon />}
+            </button>
+          </div>
         </header>
 
         <main id="contenido" className="flex-1 px-4 pb-32 pt-6 md:px-8 md:pb-10 md:pt-8">

@@ -1,18 +1,22 @@
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { createMemoryRouter, RouterProvider } from 'react-router';
-import { describe, expect, it } from 'vitest';
-import { routes } from './routes';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { mockApi, testUser } from './test/api-mock';
+import { renderApp } from './test/render';
 
-function renderAt(path: string) {
-  const router = createMemoryRouter(routes, { initialEntries: [path] });
-  return render(<RouterProvider router={router} />);
-}
+const renderAt = renderApp;
+
+// Estas pruebas cubren la navegación de una persona con sesión iniciada.
+beforeEach(() => {
+  mockApi({ 'GET /me': { body: { user: testUser } } });
+});
 
 describe('Navegación y carga perezosa', () => {
   it('muestra el dashboard en la ruta inicial', async () => {
     renderAt('/');
-    expect(await screen.findByRole('heading', { level: 1, name: 'Hola' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Hola, Ricardo' }),
+    ).toBeInTheDocument();
     expect(screen.getByText('Aún no hay movimientos')).toBeInTheDocument();
   });
 
@@ -25,7 +29,7 @@ describe('Navegación y carga perezosa', () => {
 
   it('navega a otra sección al hacer clic', async () => {
     renderAt('/');
-    await screen.findByRole('heading', { level: 1, name: 'Hola' });
+    await screen.findByRole('heading', { level: 1, name: 'Hola, Ricardo' });
     const nav = screen.getByRole('navigation', { name: 'Principal' });
     await userEvent.click(nav.querySelector('a[href="/estadisticas"]')!);
     expect(
@@ -57,7 +61,7 @@ describe('Navegación y carga perezosa', () => {
 describe('Tema claro y oscuro', () => {
   it('cambia a modo oscuro y lo indica en el botón', async () => {
     renderAt('/');
-    await screen.findByRole('heading', { level: 1, name: 'Hola' });
+    await screen.findByRole('heading', { level: 1, name: 'Hola, Ricardo' });
     await userEvent.click(screen.getByRole('button', { name: 'Cambiar a modo oscuro' }));
     expect(document.documentElement).toHaveClass('dark');
     expect(screen.getByRole('button', { name: 'Cambiar a modo claro' })).toBeInTheDocument();
@@ -68,7 +72,7 @@ describe('Menú lateral desplegable', () => {
   it('se contrae y se expande, y recuerda la preferencia', async () => {
     localStorage.removeItem('simplify-sidebar');
     renderAt('/');
-    await screen.findByRole('heading', { level: 1, name: 'Hola' });
+    await screen.findByRole('heading', { level: 1, name: 'Hola, Ricardo' });
 
     const contraer = screen.getByRole('button', { name: 'Contraer menú' });
     expect(contraer).toHaveAttribute('aria-expanded', 'true');
