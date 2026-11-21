@@ -24,3 +24,31 @@ export const currencySchema = z.enum(SUPPORTED_CURRENCIES, {
   error: 'Moneda no admitida.',
 });
 export type Currency = z.infer<typeof currencySchema>;
+
+/**
+ * Aritmética de dinero sin `number`: se trabaja en céntimos con `bigint` (enteros exactos).
+ * "85.50" → 8550n. Acepta signo negativo para los balances.
+ */
+export function toCents(amount: string): bigint {
+  const match = /^(-)?(\d+)(?:\.(\d{1,2}))?$/.exec(amount.trim());
+  if (!match) throw new Error(`Importe no válido: ${amount}`);
+  const [, sign, units, decimals = ''] = match;
+  const cents = BigInt(units!) * 100n + BigInt(decimals.padEnd(2, '0'));
+  return sign ? -cents : cents;
+}
+
+/** 8550n → "85.50"; -1250n → "-12.50". */
+export function fromCents(cents: bigint): string {
+  const negative = cents < 0n;
+  const abs = negative ? -cents : cents;
+  const units = abs / 100n;
+  const decimals = (abs % 100n).toString().padStart(2, '0');
+  return `${negative ? '-' : ''}${units}.${decimals}`;
+}
+
+/** Porcentaje de `part` sobre `total` con 1 decimal, redondeado (12.35 → 12.4). Solo para mostrar. */
+export function percentage(part: bigint, total: bigint): number {
+  if (total === 0n) return 0;
+  const tenths = (part * 2000n + total) / (2n * total); // redondeo a la décima más cercana
+  return Number(tenths) / 10;
+}

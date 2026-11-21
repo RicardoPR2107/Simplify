@@ -4,23 +4,42 @@ import request from 'supertest';
 import { createApp } from '../src/app.js';
 import type { Dependencies } from '../src/container.js';
 import { fakePasswordHasher } from './fakes/fake-password-hasher.js';
+import { InMemoryCategoryRepository } from './fakes/in-memory-category.repository.js';
+import { InMemoryMovementRepository } from './fakes/in-memory-movement.repository.js';
+import { InMemorySummaryRepository } from './fakes/in-memory-summary.repository.js';
 import { InMemoryLoginAttemptRepository } from './fakes/in-memory-login-attempt.repository.js';
 import { InMemoryRefreshTokenRepository } from './fakes/in-memory-refresh-token.repository.js';
 import { InMemoryUserRepository } from './fakes/in-memory-user.repository.js';
 
 export const TEST_JWT_SECRET = 'clave-de-pruebas-de-al-menos-32-caracteres!!';
 
-/** Crea la app con dependencias simuladas (dobles de prueba) y sin logs. */
-export function buildTestApp(overrides: Partial<Dependencies> = {}) {
+type TestOverrides = Partial<Omit<Dependencies, 'repositories'>> & {
+  repositories?: Partial<Dependencies['repositories']>;
+};
+
+/**
+ * Crea la app con dependencias simuladas (dobles de prueba) y sin logs.
+ * Se puede reemplazar solo el repositorio que la prueba necesita inspeccionar.
+ */
+export function buildTestApp(overrides: TestOverrides = {}) {
+  const { repositories, ...rest } = overrides;
+  const categories = (repositories?.categories ??
+    new InMemoryCategoryRepository()) as InMemoryCategoryRepository;
+  const movements = (repositories?.movements ??
+    new InMemoryMovementRepository(categories)) as InMemoryMovementRepository;
   const deps: Dependencies = {
     database: { ping: async () => true },
+    passwordHasher: fakePasswordHasher,
+    ...rest,
     repositories: {
       users: new InMemoryUserRepository(),
       refreshTokens: new InMemoryRefreshTokenRepository(),
       loginAttempts: new InMemoryLoginAttemptRepository(),
+      categories,
+      movements,
+      summaries: new InMemorySummaryRepository(movements, categories),
+      ...repositories,
     },
-    passwordHasher: fakePasswordHasher,
-    ...overrides,
   };
   return createApp({
     env: { NODE_ENV: 'test', CORS_ORIGIN: 'http://localhost:5173', JWT_SECRET: TEST_JWT_SECRET },
