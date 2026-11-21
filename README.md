@@ -25,7 +25,7 @@ Aplicación web full stack de finanzas personales para registrar, organizar y an
 
 ## ✨ Funcionalidades
 
-Las marcadas con 🚧 están en construcción. En las de cuenta, sesión y moneda la API ya está lista y falta la pantalla.
+Las marcadas con 🚧 están en construcción: la API ya está lista y falta la pantalla.
 
 - 🚧 **Crear una cuenta** con una contraseña segura (mínimo 8 caracteres, con mayúscula, minúscula, número y carácter especial).
 - 🚧 **Iniciar y cerrar sesión**, con la sesión guardada en cookies protegidas y límite de intentos.
@@ -71,6 +71,7 @@ docs             Arquitectura, modelo de datos, contrato OpenAPI y decisiones t�
 5. Modelé los datos para que la propia base de datos impida errores: un gasto no puede usar una categoría de ingreso y una categoría con movimientos no se puede borrar.
 6. Configuré la calidad desde el inicio: ESLint, Prettier, pruebas automatizadas y un CI que corre en cada Pull Request.
 7. Implementé la autenticación: contraseñas con Argon2id, sesión en cookies httpOnly con un token de acceso de 15 minutos y uno de renovación que rota en cada uso, protección CSRF y límite de intentos de inicio de sesión guardado en PostgreSQL.
+8. Construí la API de categorías, movimientos y resúmenes: historial con filtros y paginación estable, reasignación de movimientos en una transacción al eliminar una categoría, y balances calculados en PostgreSQL.
 
 ## 📚 Lo que aprendí
 
@@ -79,6 +80,8 @@ docs             Arquitectura, modelo de datos, contrato OpenAPI y decisiones t�
 - A diseñar para varias instancias desde el principio: nada de sesiones ni contadores en memoria.
 - A no guardar secretos en claro: de los tokens de renovación y de los intentos de inicio de sesión solo se guarda un hash.
 - A no revelar qué correos están registrados: el inicio de sesión responde igual, y tarda lo mismo, si el correo no existe o si la contraseña es incorrecta.
+- A hacer cuentas de dinero en céntimos con `bigint` (enteros exactos) cuando hay que sumar o restar en el código, y a dejar las sumas grandes a la base de datos.
+- A que un recurso de otro usuario responda 404 y no 403: así la API no confirma que existe.
 
 ## 💡 Cómo se podría mejorar
 
