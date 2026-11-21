@@ -12,6 +12,9 @@ import { TokenService } from './modules/auth/token.service.js';
 import { CategoryController } from './modules/categories/category.controller.js';
 import type { CategoryRepository } from './modules/categories/category.repository.js';
 import { CategoryService } from './modules/categories/category.service.js';
+import { MovementController } from './modules/movements/movement.controller.js';
+import type { MovementRepository } from './modules/movements/movement.repository.js';
+import { MovementService } from './modules/movements/movement.service.js';
 import { HealthController } from './modules/health/health.controller.js';
 import { HealthService, type DatabaseProbe } from './modules/health/health.service.js';
 
@@ -27,6 +30,7 @@ export interface Dependencies {
     refreshTokens: RefreshTokenRepository;
     loginAttempts: LoginAttemptRepository;
     categories: CategoryRepository;
+    movements: MovementRepository;
   };
   passwordHasher: PasswordHasher;
   /** Reloj inyectable: las pruebas lo adelantan para comprobar vencimientos. */
@@ -46,6 +50,9 @@ export function buildControllers(deps: Dependencies, config: AppConfig) {
     health: new HealthController(new HealthService(deps.database)),
     auth: new AuthController(auth, sessions, config.NODE_ENV === 'production'),
     categories: new CategoryController(new CategoryService(deps.repositories.categories)),
+    movements: new MovementController(
+      new MovementService(deps.repositories.movements, deps.repositories.categories),
+    ),
     requireAuth: requireAuth(tokens),
   };
 }

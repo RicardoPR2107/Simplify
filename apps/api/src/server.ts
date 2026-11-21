@@ -6,6 +6,7 @@ import { createPrismaClient } from './lib/prisma.js';
 import { PrismaUserRepository } from './modules/auth/auth.repository.js';
 import { PrismaLoginAttemptRepository } from './modules/auth/login-attempt.repository.js';
 import { PrismaCategoryRepository } from './modules/categories/category.repository.js';
+import { PrismaMovementRepository } from './modules/movements/movement.repository.js';
 import { PrismaRefreshTokenRepository } from './modules/auth/refresh-token.repository.js';
 
 const env = loadEnv();
@@ -33,6 +34,7 @@ const app = createApp({
       refreshTokens: new PrismaRefreshTokenRepository(prisma),
       loginAttempts: new PrismaLoginAttemptRepository(prisma),
       categories: new PrismaCategoryRepository(prisma),
+      movements: new PrismaMovementRepository(prisma),
     },
     passwordHasher: argon2Hasher,
   },
