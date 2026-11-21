@@ -3,16 +3,19 @@ info:
   title: Simplify API
   version: 0.1.0
   description: |
-    API REST de Simplify. Contrato inicial (Fase 0): los endpoints marcados como
-    "planificado" se implementan en las Fases 1 y 2.
+    API REST de Simplify. Los endpoints marcados como "planificado" aún no están implementados.
 
     - Autenticación: cookies httpOnly (ver docs/adr/0002). Las rutas protegidas
       responden 401 sin sesión válida.
+    - CSRF: todo POST, PATCH y DELETE debe enviar la cabecera `X-CSRF-Token` con el valor
+      de la cookie `simplify_csrf` (se obtiene con GET /auth/csrf); si falta, responde 403.
     - Importes: siempre texto con hasta 2 decimales, por ejemplo "85.50" (docs/adr/0003).
     - Fechas: texto AAAA-MM-DD.
     - Aislamiento: un usuario solo ve sus propios datos; un id ajeno responde 404.
 servers:
   - url: /api/v1
+security:
+  - cookieAuth: []
 tags:
   - name: health
   - name: auth
@@ -24,6 +27,7 @@ tags:
 paths:
   /health/live:
     get:
+      security: []
       tags: [health]
       summary: El proceso está vivo
       responses:
@@ -31,6 +35,7 @@ paths:
           description: OK
   /health/ready:
     get:
+      security: []
       tags: [health]
       summary: La instancia puede atender tráfico (la usa el balanceador)
       responses:
@@ -41,12 +46,16 @@ paths:
 
   /auth/register:
     post:
+      security: []
       tags: [auth]
       summary: Crear cuenta (RF-01)
       description: |
         Crea la cuenta con la contraseña cifrada con Argon2id y las 11 categorías
-        predeterminadas, en una sola transacción. El correo se guarda en minúsculas.
-        Los campos extra del cuerpo (por ejemplo `id` o `currency`) se ignoran.
+        predeterminadas, en una sola transacción, e inicia la sesión (cookies).
+        El correo se guarda en minúsculas. Los campos extra del cuerpo (por ejemplo
+        `id` o `currency`) se ignoran.
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
       requestBody:
         required: true
         content:
@@ -62,50 +71,128 @@ paths:
                 properties:
                   user: { $ref: '#/components/schemas/User' }
         '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/CsrfError' }
         '409': { $ref: '#/components/responses/Conflict' }
+  /auth/csrf:
+    get:
+      security: []
+      tags: [auth]
+      summary: Obtener el token CSRF
+      description: |
+        Guarda el token en la cookie `simplify_csrf` (legible por JavaScript) y lo devuelve.
+        El frontend debe enviarlo en la cabecera `X-CSRF-Token` en todo POST, PATCH y DELETE.
+        Si el navegador ya tiene un token válido, se conserva.
+      responses:
+        '200':
+          description: Token CSRF
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  csrfToken: { type: string }
   /auth/login:
     post:
+      security: []
       tags: [auth]
-      summary: Iniciar sesión (RF-02) — planificado
+      summary: Iniciar sesión (RF-02)
+      description: |
+        Responde igual si el correo no existe o si la contraseña es incorrecta.
+        Tras 5 fallos en 15 minutos para un correo (o 20 desde una IP) responde 429
+        con la cabecera `Retry-After`, aunque la contraseña sea correcta.
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
       requestBody:
         required: true
         content:
           application/json:
             schema: { $ref: '#/components/schemas/LoginInput' }
       responses:
-        '200': { description: Sesión iniciada; se envían las cookies }
+        '200':
+          description: Sesión iniciada; se envían las cookies `simplify_at` y `simplify_rt`
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/User' }
+        '400': { $ref: '#/components/responses/ValidationError' }
         '401': { $ref: '#/components/responses/Error' }
-        '429': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/CsrfError' }
+        '429':
+          description: Demasiados intentos
+          headers:
+            Retry-After:
+              description: Segundos que faltan para poder reintentar
+              schema: { type: integer }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
   /auth/refresh:
     post:
+      security: []
       tags: [auth]
-      summary: Renovar el token de acceso — planificado
+      summary: Renovar la sesión
+      description: |
+        Usa la cookie `simplify_rt` y la rota: el token anterior deja de servir.
+        Si llega un token ya usado (posible robo), se cierran todas las sesiones del usuario.
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
       responses:
         '204': { description: Cookies renovadas }
         '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/CsrfError' }
   /auth/logout:
     post:
+      security: []
       tags: [auth]
-      summary: Cerrar sesión (RF-03) — planificado
+      summary: Cerrar sesión (RF-03)
+      description: Revoca el token de renovación y borra las cookies. Responde 204 aunque no haya sesión.
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
       responses:
         '204': { description: Sesión cerrada }
+        '403': { $ref: '#/components/responses/CsrfError' }
 
   /me:
     get:
       tags: [profile]
-      summary: Perfil del usuario (RF-04) — planificado
+      summary: Perfil del usuario (RF-04)
       responses:
         '200':
           description: OK
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/User' }
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/User' }
+        '401': { $ref: '#/components/responses/Error' }
     patch:
       tags: [profile]
-      summary: Cambiar nombre o moneda (RF-04, RF-18) — planificado
+      summary: Cambiar nombre o moneda (RF-04, RF-18)
+      description: |
+        Solo acepta `name` y `currency`; cualquier otro campo se ignora.
+        Cambiar la moneda no convierte los importes ya registrados.
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateProfileInput' }
       responses:
-        '200': { description: Perfil actualizado }
+        '200':
+          description: Perfil actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/User' }
         '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/CsrfError' }
 
   /categories:
     get:
@@ -243,6 +330,12 @@ paths:
         '200': { description: OK }
 
 components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: simplify_at
+      description: Token de acceso (JWT de 15 minutos) en cookie httpOnly.
   parameters:
     Id:
       name: id
@@ -259,8 +352,19 @@ components:
       in: query
       required: true
       schema: { type: integer, minimum: 1, maximum: 12 }
+    CsrfToken:
+      name: X-CSRF-Token
+      in: header
+      required: true
+      description: Valor de la cookie `simplify_csrf`
+      schema: { type: string }
 
   responses:
+    CsrfError:
+      description: Falta el token CSRF o no coincide con la cookie
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
     Error:
       description: Error con código
       content:
@@ -339,6 +443,12 @@ components:
       properties:
         email: { type: string, format: email }
         password: { type: string }
+    UpdateProfileInput:
+      type: object
+      minProperties: 1
+      properties:
+        name: { type: string, minLength: 2, maxLength: 60 }
+        currency: { type: string, enum: [USD, PEN, EUR, MXN, COP] }
     User:
       type: object
       properties:

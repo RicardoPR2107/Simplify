@@ -25,7 +25,7 @@ Aplicación web full stack de finanzas personales para registrar, organizar y an
 
 ## ✨ Funcionalidades
 
-Las marcadas con 🚧 están en construcción.
+Las marcadas con 🚧 están en construcción. En las de cuenta, sesión y moneda la API ya está lista y falta la pantalla.
 
 - 🚧 **Crear una cuenta** con una contraseña segura (mínimo 8 caracteres, con mayúscula, minúscula, número y carácter especial).
 - 🚧 **Iniciar y cerrar sesión**, con la sesión guardada en cookies protegidas y límite de intentos.
@@ -70,12 +70,15 @@ docs             Arquitectura, modelo de datos, contrato OpenAPI y decisiones t�
 4. Construí la base del backend por capas (rutas, controladores, servicios y repositorio) con Prisma sobre PostgreSQL.
 5. Modelé los datos para que la propia base de datos impida errores: un gasto no puede usar una categoría de ingreso y una categoría con movimientos no se puede borrar.
 6. Configuré la calidad desde el inicio: ESLint, Prettier, pruebas automatizadas y un CI que corre en cada Pull Request.
+7. Implementé la autenticación: contraseñas con Argon2id, sesión en cookies httpOnly con un token de acceso de 15 minutos y uno de renovación que rota en cada uso, protección CSRF y límite de intentos de inicio de sesión guardado en PostgreSQL.
 
 ## 📚 Lo que aprendí
 
 - A no usar `number` para el dinero: los importes viajan como texto y se guardan como `NUMERIC(12,2)`, porque `0.1 + 0.2` no da `0.3` en JavaScript.
 - A hacer cumplir las reglas de negocio también en la base de datos, no solo en el código.
 - A diseñar para varias instancias desde el principio: nada de sesiones ni contadores en memoria.
+- A no guardar secretos en claro: de los tokens de renovación y de los intentos de inicio de sesión solo se guarda un hash.
+- A no revelar qué correos están registrados: el inicio de sesión responde igual, y tarda lo mismo, si el correo no existe o si la contraseña es incorrecta.
 
 ## 💡 Cómo se podría mejorar
 
@@ -93,25 +96,36 @@ cd Simplify
 npm install
 ```
 
-1. Copia `apps/api/.env.example` como `apps/api/.env` (en PowerShell: `Copy-Item apps/api/.env.example apps/api/.env`).
+1. Copia `apps/api/.env.example` como `apps/api/.env` (en PowerShell: `Copy-Item apps/api/.env.example apps/api/.env`) y cambia `JWT_SECRET` por una clave propia:
+
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+   ```
+
 2. Levanta PostgreSQL en Docker (desarrollo en el puerto 5434 y pruebas en el 5433):
 
    ```bash
    npm run db:up
    ```
 
-3. Arranca la app:
+3. Crea las tablas:
+
+   ```bash
+   npm run db:migrate -w @simplify/api
+   ```
+
+4. Arranca la app:
 
    ```bash
    npm run dev
    ```
 
-4. Abre http://localhost:5173. La API responde en http://localhost:4000/api/v1/health/ready.
+5. Abre http://localhost:5173. La API responde en http://localhost:4000/api/v1/health/ready.
 
 ### Pruebas
 
 ```bash
-npm test             # unitarias, API y componentes
+npm test             # unitarias, API, componentes e integración con PostgreSQL
 npm run lint         # análisis estático
 npm run typecheck    # revisión de tipos
 ```
