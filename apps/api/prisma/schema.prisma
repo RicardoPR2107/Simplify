@@ -53,8 +53,9 @@ model Category {
 
   // Un usuario no puede repetir el nombre de una categoría dentro del mismo tipo.
   @@unique([userId, type, name])
-  // Permite exigir en la base de datos que movimiento y categoría tengan el mismo tipo (RN-03).
-  @@unique([id, type])
+  // Permite exigir en la base de datos que el movimiento use una categoría del mismo usuario (RN-05)
+  // y del mismo tipo (RN-03).
+  @@unique([id, userId, type])
   @@index([userId, type])
   @@map("categories")
 }
@@ -75,8 +76,9 @@ model Movement {
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   // RN-09: Restrict impide borrar una categoría con movimientos.
-  // La relación compuesta (categoryId, type) garantiza que el tipo coincida con el de la categoría (RN-03).
-  category Category @relation(fields: [categoryId, type], references: [id, type], onDelete: Restrict, onUpdate: Cascade)
+  // La relación compuesta (categoryId, userId, type) garantiza que la categoría sea del mismo
+  // usuario (RN-05) y del mismo tipo (RN-03) que el movimiento.
+  category Category @relation(fields: [categoryId, userId, type], references: [id, userId, type], onDelete: Restrict, onUpdate: Cascade)
 
   @@index([userId, date])
   @@index([userId, categoryId])
