@@ -1,20 +1,11 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { argon2Hasher } from '../../src/lib/password.js';
-import { PrismaUserRepository } from '../../src/modules/auth/auth.repository.js';
-import { PrismaLoginAttemptRepository } from '../../src/modules/auth/login-attempt.repository.js';
-import { PrismaRefreshTokenRepository } from '../../src/modules/auth/refresh-token.repository.js';
-import { buildTestApp, post } from '../helpers.js';
+import { post } from '../helpers.js';
+import { buildIntegrationApp } from './app.js';
 import { createTestPrisma, resetData } from './database.js';
 
 const prisma = createTestPrisma();
-const app = buildTestApp({
-  repositories: {
-    users: new PrismaUserRepository(prisma),
-    refreshTokens: new PrismaRefreshTokenRepository(prisma),
-    loginAttempts: new PrismaLoginAttemptRepository(prisma),
-  },
-  passwordHasher: argon2Hasher,
-});
+const app = buildIntegrationApp(prisma);
 const body = { name: 'Ricardo', email: 'ricardo@example.com', password: 'Clave#Segura123' };
 
 beforeEach(() => resetData(prisma));

@@ -9,6 +9,9 @@ import { LoginThrottleService } from './modules/auth/login-throttle.service.js';
 import type { RefreshTokenRepository } from './modules/auth/refresh-token.repository.js';
 import { SessionService } from './modules/auth/session.service.js';
 import { TokenService } from './modules/auth/token.service.js';
+import { CategoryController } from './modules/categories/category.controller.js';
+import type { CategoryRepository } from './modules/categories/category.repository.js';
+import { CategoryService } from './modules/categories/category.service.js';
 import { HealthController } from './modules/health/health.controller.js';
 import { HealthService, type DatabaseProbe } from './modules/health/health.service.js';
 
@@ -23,6 +26,7 @@ export interface Dependencies {
     users: UserRepository;
     refreshTokens: RefreshTokenRepository;
     loginAttempts: LoginAttemptRepository;
+    categories: CategoryRepository;
   };
   passwordHasher: PasswordHasher;
   /** Reloj inyectable: las pruebas lo adelantan para comprobar vencimientos. */
@@ -41,6 +45,7 @@ export function buildControllers(deps: Dependencies, config: AppConfig) {
   return {
     health: new HealthController(new HealthService(deps.database)),
     auth: new AuthController(auth, sessions, config.NODE_ENV === 'production'),
+    categories: new CategoryController(new CategoryService(deps.repositories.categories)),
     requireAuth: requireAuth(tokens),
   };
 }

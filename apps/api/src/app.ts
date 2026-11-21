@@ -9,6 +9,7 @@ import { buildControllers, type AppConfig, type Dependencies } from './container
 import { csrfProtection } from './middlewares/csrf.js';
 import { errorHandler, notFoundHandler } from './middlewares/error-handler.js';
 import { createAuthRouter, createMeRouter } from './modules/auth/auth.router.js';
+import { createCategoryRouter } from './modules/categories/category.router.js';
 import { createHealthRouter } from './modules/health/health.router.js';
 
 export interface AppOptions {
@@ -64,6 +65,10 @@ export function createApp({ env, logger, deps }: AppOptions): Express {
   app.use('/api/v1/health', createHealthRouter(controllers.health));
   app.use('/api/v1/auth', createAuthRouter(controllers.auth));
   app.use('/api/v1/me', createMeRouter(controllers.auth, controllers.requireAuth));
+  app.use(
+    '/api/v1/categories',
+    createCategoryRouter(controllers.categories, controllers.requireAuth),
+  );
 
   // 6. Errores: siempre al final.
   app.use(notFoundHandler);

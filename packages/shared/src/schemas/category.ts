@@ -29,6 +29,22 @@ export const deleteCategorySchema = z.object({
 });
 export type DeleteCategoryInput = z.infer<typeof deleteCategorySchema>;
 
+/** Id de un recurso en la URL (`/categories/:id`). Se valida antes de llegar a la base de datos. */
+export const idParamSchema = z.object({ id: z.uuid({ error: 'El identificador no es válido.' }) });
+
+export const listCategoriesQuerySchema = z.object({ type: movementTypeSchema.optional() });
+export type ListCategoriesQuery = z.infer<typeof listCategoriesQuerySchema>;
+
+/** Lo que la API devuelve de una categoría. */
+export interface CategoryView {
+  id: string;
+  name: string;
+  type: MovementType;
+  isDefault: boolean;
+  /** Cuántos movimientos la usan: el frontend lo necesita para avisar antes de eliminarla. */
+  movementCount: number;
+}
+
 /** Categorías creadas al registrarse (sección 2.3 del documento de producto). */
 export const DEFAULT_CATEGORIES: ReadonlyArray<{ name: string; type: MovementType }> = [
   { name: 'Salario', type: 'INCOME' },
