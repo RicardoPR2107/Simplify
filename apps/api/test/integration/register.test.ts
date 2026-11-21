@@ -1,9 +1,9 @@
-import request from 'supertest';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { argon2Hasher } from '../../src/lib/password.js';
 import { PrismaUserRepository } from '../../src/modules/auth/auth.repository.js';
+import { PrismaLoginAttemptRepository } from '../../src/modules/auth/login-attempt.repository.js';
 import { PrismaRefreshTokenRepository } from '../../src/modules/auth/refresh-token.repository.js';
-import { buildTestApp } from '../helpers.js';
+import { buildTestApp, post } from '../helpers.js';
 import { createTestPrisma, resetData } from './database.js';
 
 const prisma = createTestPrisma();
@@ -11,6 +11,7 @@ const app = buildTestApp({
   repositories: {
     users: new PrismaUserRepository(prisma),
     refreshTokens: new PrismaRefreshTokenRepository(prisma),
+    loginAttempts: new PrismaLoginAttemptRepository(prisma),
   },
   passwordHasher: argon2Hasher,
 });
@@ -21,7 +22,7 @@ afterAll(() => prisma.$disconnect());
 
 describe('Registro con base de datos real', () => {
   it('guarda el usuario con la contraseña cifrada con Argon2id', async () => {
-    const res = await request(app).post('/api/v1/auth/register').send(body);
+    const res = await post(app, '/api/v1/auth/register').send(body);
     expect(res.status).toBe(201);
 
     const user = await prisma.user.findUniqueOrThrow({ where: { email: 'ricardo@example.com' } });
@@ -30,7 +31,7 @@ describe('Registro con base de datos real', () => {
   });
 
   it('crea las 11 categorías predeterminadas (4 de ingreso y 7 de gasto)', async () => {
-    const res = await request(app).post('/api/v1/auth/register').send(body);
+    const res = await post(app, '/api/v1/auth/register').send(body);
 
     const categories = await prisma.category.findMany({ where: { userId: res.body.user.id } });
     expect(categories).toHaveLength(11);
@@ -41,8 +42,8 @@ describe('Registro con base de datos real', () => {
 
   it('dos registros simultáneos con el mismo correo crean una sola cuenta', async () => {
     const [a, b] = await Promise.all([
-      request(app).post('/api/v1/auth/register').send(body),
-      request(app).post('/api/v1/auth/register').send(body),
+      post(app, '/api/v1/auth/register').send(body),
+      post(app, '/api/v1/auth/register').send(body),
     ]);
 
     expect([a.status, b.status].sort()).toEqual([201, 409]);

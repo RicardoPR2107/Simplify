@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
-import { buildTestApp } from './helpers.js';
+import { buildTestApp, csrfAgent, post } from './helpers.js';
 
 const account = { name: 'Ricardo', email: 'ricardo@example.com', password: 'Clave#Segura123' };
 
@@ -21,14 +21,14 @@ function cookieValue(line: string | undefined): string {
 }
 
 async function registeredAgent() {
-  const agent = request.agent(buildTestApp());
+  const agent = await csrfAgent(buildTestApp());
   await agent.post('/api/v1/auth/register').send(account).expect(201);
   return agent;
 }
 
 describe('Cookies de sesión', () => {
   it('el registro inicia sesión con cookies httpOnly y SameSite=Lax', async () => {
-    const res = await request(buildTestApp()).post('/api/v1/auth/register').send(account);
+    const res = await post(buildTestApp(), '/api/v1/auth/register').send(account);
     const set = cookies(res);
 
     expect(set.simplify_at).toMatch(/HttpOnly/);
@@ -40,7 +40,7 @@ describe('Cookies de sesión', () => {
   });
 
   it('los tokens nunca aparecen en el cuerpo de la respuesta', async () => {
-    const res = await request(buildTestApp()).post('/api/v1/auth/register').send(account);
+    const res = await post(buildTestApp(), '/api/v1/auth/register').send(account);
     const body = JSON.stringify(res.body);
 
     expect(body).not.toContain(cookieValue(cookies(res).simplify_at));
@@ -51,11 +51,12 @@ describe('Cookies de sesión', () => {
 describe('POST /api/v1/auth/login (RF-02)', () => {
   it('inicia sesión con credenciales correctas', async () => {
     const app = buildTestApp();
-    await request(app).post('/api/v1/auth/register').send(account);
+    await post(app, '/api/v1/auth/register').send(account);
 
-    const res = await request(app)
-      .post('/api/v1/auth/login')
-      .send({ email: 'RICARDO@example.com', password: account.password });
+    const res = await post(app, '/api/v1/auth/login').send({
+      email: 'RICARDO@example.com',
+      password: account.password,
+    });
     expect(res.status).toBe(200);
     expect(res.body.user.email).toBe('ricardo@example.com');
     expect(cookies(res).simplify_at).toBeDefined();
@@ -63,14 +64,16 @@ describe('POST /api/v1/auth/login (RF-02)', () => {
 
   it('responde igual si el correo no existe o si la contraseña es incorrecta', async () => {
     const app = buildTestApp();
-    await request(app).post('/api/v1/auth/register').send(account);
+    await post(app, '/api/v1/auth/register').send(account);
 
-    const wrongPassword = await request(app)
-      .post('/api/v1/auth/login')
-      .send({ email: account.email, password: 'Otra#Clave123' });
-    const unknownEmail = await request(app)
-      .post('/api/v1/auth/login')
-      .send({ email: 'nadie@example.com', password: 'Otra#Clave123' });
+    const wrongPassword = await post(app, '/api/v1/auth/login').send({
+      email: account.email,
+      password: 'Otra#Clave123',
+    });
+    const unknownEmail = await post(app, '/api/v1/auth/login').send({
+      email: 'nadie@example.com',
+      password: 'Otra#Clave123',
+    });
 
     expect(wrongPassword.status).toBe(401);
     expect(unknownEmail.status).toBe(401);
@@ -106,39 +109,31 @@ describe('GET /api/v1/me', () => {
 describe('POST /api/v1/auth/refresh', () => {
   it('entrega un token de renovación nuevo y mantiene la sesión', async () => {
     const app = buildTestApp();
-    const registered = await request(app).post('/api/v1/auth/register').send(account);
+    const registered = await post(app, '/api/v1/auth/register').send(account);
     const firstRefresh = cookieValue(cookies(registered).simplify_rt);
 
-    const res = await request(app)
-      .post('/api/v1/auth/refresh')
-      .set('Cookie', `simplify_rt=${firstRefresh}`);
+    const res = await post(app, '/api/v1/auth/refresh', [`simplify_rt=${firstRefresh}`]);
     expect(res.status).toBe(204);
     expect(cookieValue(cookies(res).simplify_rt)).not.toBe(firstRefresh);
   });
 
   it('un token de renovación usado dos veces cierra la sesión', async () => {
     const app = buildTestApp();
-    const registered = await request(app).post('/api/v1/auth/register').send(account);
+    const registered = await post(app, '/api/v1/auth/register').send(account);
     const stolen = cookieValue(cookies(registered).simplify_rt);
 
-    const legit = await request(app)
-      .post('/api/v1/auth/refresh')
-      .set('Cookie', `simplify_rt=${stolen}`);
-    const attacker = await request(app)
-      .post('/api/v1/auth/refresh')
-      .set('Cookie', `simplify_rt=${stolen}`);
+    const legit = await post(app, '/api/v1/auth/refresh', [`simplify_rt=${stolen}`]);
+    const attacker = await post(app, '/api/v1/auth/refresh', [`simplify_rt=${stolen}`]);
     expect(attacker.status).toBe(401);
 
     // La sesión legítima también se cerró: hay que volver a iniciar sesión.
     const newRefresh = cookieValue(cookies(legit).simplify_rt);
-    const after = await request(app)
-      .post('/api/v1/auth/refresh')
-      .set('Cookie', `simplify_rt=${newRefresh}`);
+    const after = await post(app, '/api/v1/auth/refresh', [`simplify_rt=${newRefresh}`]);
     expect(after.status).toBe(401);
   });
 
   it('sin token de renovación responde 401', async () => {
-    const res = await request(buildTestApp()).post('/api/v1/auth/refresh');
+    const res = await post(buildTestApp(), '/api/v1/auth/refresh');
     expect(res.status).toBe(401);
   });
 });
@@ -146,23 +141,41 @@ describe('POST /api/v1/auth/refresh', () => {
 describe('POST /api/v1/auth/logout (RF-03)', () => {
   it('borra las cookies y el token de renovación deja de servir', async () => {
     const app = buildTestApp();
-    const registered = await request(app).post('/api/v1/auth/register').send(account);
+    const registered = await post(app, '/api/v1/auth/register').send(account);
     const refresh = cookieValue(cookies(registered).simplify_rt);
 
-    const res = await request(app)
-      .post('/api/v1/auth/logout')
-      .set('Cookie', `simplify_rt=${refresh}`);
+    const res = await post(app, '/api/v1/auth/logout', [`simplify_rt=${refresh}`]);
     expect(res.status).toBe(204);
     expect(cookies(res).simplify_at).toMatch(/Expires=Thu, 01 Jan 1970/);
 
-    const reuse = await request(app)
-      .post('/api/v1/auth/refresh')
-      .set('Cookie', `simplify_rt=${refresh}`);
+    const reuse = await post(app, '/api/v1/auth/refresh', [`simplify_rt=${refresh}`]);
     expect(reuse.status).toBe(401);
   });
 
   it('sin sesión también responde 204 (cerrar sesión siempre funciona)', async () => {
-    const res = await request(buildTestApp()).post('/api/v1/auth/logout');
+    const res = await post(buildTestApp(), '/api/v1/auth/logout');
     expect(res.status).toBe(204);
+  });
+});
+
+describe('Límite de intentos de inicio de sesión', () => {
+  it('tras 5 contraseñas incorrectas responde 429 con Retry-After, incluso con la correcta', async () => {
+    const app = buildTestApp();
+    await post(app, '/api/v1/auth/register').send(account).expect(201);
+
+    for (let i = 0; i < 5; i++) {
+      await post(app, '/api/v1/auth/login')
+        .send({ email: account.email, password: 'Incorrecta#1' })
+        .expect(401);
+    }
+    const blocked = await post(app, '/api/v1/auth/login').send({
+      email: account.email,
+      password: account.password,
+    });
+
+    expect(blocked.status).toBe(429);
+    expect(blocked.body.error.code).toBe('TOO_MANY_ATTEMPTS');
+    expect(Number(blocked.headers['retry-after'])).toBeGreaterThan(0);
+    expect(cookies(blocked).simplify_at).toBeUndefined();
   });
 });

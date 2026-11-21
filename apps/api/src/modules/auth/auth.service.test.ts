@@ -3,12 +3,21 @@ import { AppError } from '../../errors/app-error.js';
 import { fakePasswordHasher } from '../../../test/fakes/fake-password-hasher.js';
 import { InMemoryUserRepository } from '../../../test/fakes/in-memory-user.repository.js';
 import { AuthService } from './auth.service.js';
+import { InMemoryLoginAttemptRepository } from '../../../test/fakes/in-memory-login-attempt.repository.js';
+import { LoginThrottleService } from './login-throttle.service.js';
 
 const input = { name: 'Ricardo', email: 'ricardo@example.com', password: 'Clave#Segura123' };
 
 function setup() {
   const users = new InMemoryUserRepository();
-  return { users, service: new AuthService(users, fakePasswordHasher) };
+  return {
+    users,
+    service: new AuthService(
+      users,
+      fakePasswordHasher,
+      new LoginThrottleService(new InMemoryLoginAttemptRepository()),
+    ),
+  };
 }
 
 describe('AuthService.register (RF-01)', () => {

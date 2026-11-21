@@ -1,7 +1,10 @@
+import type { Express } from 'express';
 import { pino } from 'pino';
+import request from 'supertest';
 import { createApp } from '../src/app.js';
 import type { Dependencies } from '../src/container.js';
 import { fakePasswordHasher } from './fakes/fake-password-hasher.js';
+import { InMemoryLoginAttemptRepository } from './fakes/in-memory-login-attempt.repository.js';
 import { InMemoryRefreshTokenRepository } from './fakes/in-memory-refresh-token.repository.js';
 import { InMemoryUserRepository } from './fakes/in-memory-user.repository.js';
 
@@ -14,6 +17,7 @@ export function buildTestApp(overrides: Partial<Dependencies> = {}) {
     repositories: {
       users: new InMemoryUserRepository(),
       refreshTokens: new InMemoryRefreshTokenRepository(),
+      loginAttempts: new InMemoryLoginAttemptRepository(),
     },
     passwordHasher: fakePasswordHasher,
     ...overrides,
@@ -23,4 +27,25 @@ export function buildTestApp(overrides: Partial<Dependencies> = {}) {
     logger: pino({ level: 'silent' }),
     deps,
   });
+}
+
+/** Token CSRF fijo para pruebas: en el doble envío basta con que cookie y cabecera coincidan. */
+export const TEST_CSRF_TOKEN = 'token-csrf-de-pruebas-0123456789abcdefghijk';
+
+/** POST con token CSRF (cookie + cabecera), más las cookies extra que se pasen. */
+export function post(app: Express, url: string, cookies: string[] = []) {
+  return request(app)
+    .post(url)
+    .set('Cookie', [`simplify_csrf=${TEST_CSRF_TOKEN}`, ...cookies])
+    .set('X-CSRF-Token', TEST_CSRF_TOKEN);
+}
+
+/**
+ * Agente que guarda cookies entre peticiones, como un navegador.
+ * Pide el token CSRF igual que lo hará el frontend y lo envía en cada petición.
+ */
+export async function csrfAgent(app: Express) {
+  const agent = request.agent(app);
+  const res = await agent.get('/api/v1/auth/csrf').expect(200);
+  return agent.set('X-CSRF-Token', res.body.csrfToken as string);
 }

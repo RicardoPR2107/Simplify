@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import type { LoginInput, RegisterInput } from '@simplify/shared';
+import { issueCsrfToken } from '../../middlewares/csrf.js';
 import type { AuthService } from './auth.service.js';
 import { clearSessionCookies, REFRESH_COOKIE, setSessionCookies } from './cookies.js';
 import type { SessionService } from './session.service.js';
@@ -20,9 +21,15 @@ export class AuthController {
     res.status(201).json({ user });
   };
 
+  /** Entrega el token CSRF que el frontend debe enviar en la cabecera X-CSRF-Token. */
+  csrf = (req: Request, res: Response): void => {
+    const token = issueCsrfToken(req.cookies?.simplify_csrf, res, this.secureCookies);
+    res.set('Cache-Control', 'no-store').json({ csrfToken: token });
+  };
+
   /** RF-02 */
   login = async (req: Request, res: Response): Promise<void> => {
-    const user = await this.auth.login(req.validated?.body as LoginInput);
+    const user = await this.auth.login(req.validated?.body as LoginInput, req.ip ?? 'desconocida');
     const tokens = await this.sessions.start(user.id, req.get('user-agent'));
     setSessionCookies(res, tokens, this.secureCookies);
     res.json({ user });

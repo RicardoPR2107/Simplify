@@ -1,9 +1,10 @@
-import request from 'supertest';
+import type request from 'supertest';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { argon2Hasher } from '../../src/lib/password.js';
 import { PrismaUserRepository } from '../../src/modules/auth/auth.repository.js';
+import { PrismaLoginAttemptRepository } from '../../src/modules/auth/login-attempt.repository.js';
 import { PrismaRefreshTokenRepository } from '../../src/modules/auth/refresh-token.repository.js';
-import { buildTestApp } from '../helpers.js';
+import { buildTestApp, csrfAgent, post } from '../helpers.js';
 import { createTestPrisma, resetData } from './database.js';
 
 const prisma = createTestPrisma();
@@ -11,6 +12,7 @@ const app = buildTestApp({
   repositories: {
     users: new PrismaUserRepository(prisma),
     refreshTokens: new PrismaRefreshTokenRepository(prisma),
+    loginAttempts: new PrismaLoginAttemptRepository(prisma),
   },
   passwordHasher: argon2Hasher,
 });
@@ -26,9 +28,9 @@ afterAll(() => prisma.$disconnect());
 
 describe('Sesiones con base de datos real', () => {
   it('login, perfil y cierre de sesión de punta a punta', async () => {
-    await request(app).post('/api/v1/auth/register').send(account).expect(201);
+    await post(app, '/api/v1/auth/register').send(account).expect(201);
 
-    const agent = request.agent(app);
+    const agent = await csrfAgent(app);
     await agent
       .post('/api/v1/auth/login')
       .send({ email: account.email, password: account.password })
@@ -41,7 +43,7 @@ describe('Sesiones con base de datos real', () => {
   });
 
   it('guarda el token de renovación solo como hash', async () => {
-    const res = await request(app).post('/api/v1/auth/register').send(account);
+    const res = await post(app, '/api/v1/auth/register').send(account);
     const raw = refreshCookie(res).split('=')[1]!;
 
     const stored = await prisma.refreshToken.findMany();
@@ -51,16 +53,35 @@ describe('Sesiones con base de datos real', () => {
   });
 
   it('dos renovaciones simultáneas con el mismo token se tratan como robo', async () => {
-    const res = await request(app).post('/api/v1/auth/register').send(account);
+    const res = await post(app, '/api/v1/auth/register').send(account);
     const cookie = refreshCookie(res);
 
     const [a, b] = await Promise.all([
-      request(app).post('/api/v1/auth/refresh').set('Cookie', cookie),
-      request(app).post('/api/v1/auth/refresh').set('Cookie', cookie),
+      post(app, '/api/v1/auth/refresh', [cookie]),
+      post(app, '/api/v1/auth/refresh', [cookie]),
     ]);
 
     // Solo una puede ganar: la otra se detecta como reutilización y se rechaza.
     expect([a.status, b.status]).toContain(401);
     expect([a.status, b.status]).not.toEqual([204, 204]);
+  });
+});
+
+describe('Límite de intentos con base de datos real', () => {
+  it('registra los fallos como hash y bloquea al sexto intento', async () => {
+    await post(app, '/api/v1/auth/register').send(account).expect(201);
+    for (let i = 0; i < 5; i++) {
+      await post(app, '/api/v1/auth/login')
+        .send({ email: account.email, password: 'Incorrecta#1' })
+        .expect(401);
+    }
+
+    await post(app, '/api/v1/auth/login')
+      .send({ email: account.email, password: account.password })
+      .expect(429);
+
+    const rows = await prisma.loginAttempt.findMany();
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every((row) => !row.key.includes('ricardo'))).toBe(true);
   });
 });

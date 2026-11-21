@@ -2,6 +2,7 @@ import { ErrorCode, type LoginInput, type RegisterInput, type UserProfile } from
 import { AppError } from '../../errors/app-error.js';
 import type { PasswordHasher } from '../../lib/password.js';
 import type { UserRecord, UserRepository } from './auth.repository.js';
+import type { LoginThrottleService } from './login-throttle.service.js';
 
 /** Capa Service: reglas de negocio de las cuentas. No conoce Express ni Prisma. */
 export class AuthService {
@@ -11,6 +12,7 @@ export class AuthService {
   constructor(
     private readonly users: UserRepository,
     private readonly hasher: PasswordHasher,
+    private readonly throttle: LoginThrottleService,
   ) {}
 
   /** RF-01: crea una cuenta con sus categorías predeterminadas. */
@@ -32,11 +34,18 @@ export class AuthService {
    * Responde igual (y tarda lo mismo) si el correo no existe o si la contraseña es incorrecta,
    * para que nadie pueda averiguar qué correos están registrados.
    */
-  async login(input: LoginInput): Promise<UserProfile> {
+  async login(input: LoginInput, ip: string): Promise<UserProfile> {
+    // Primero el límite: si está bloqueado, ni siquiera se comprueba la contraseña.
+    await this.throttle.assertAllowed(input.email, ip);
+
     const user = await this.users.findByEmail(input.email);
     const hash = user?.passwordHash ?? (await this.getDummyHash());
     const valid = await this.hasher.verify(hash, input.password);
-    if (!user || !valid) throw new AppError(ErrorCode.INVALID_CREDENTIALS);
+    if (!user || !valid) {
+      await this.throttle.recordFailure(input.email, ip);
+      throw new AppError(ErrorCode.INVALID_CREDENTIALS);
+    }
+    await this.throttle.recordSuccess(input.email, ip);
     return toProfile(user);
   }
 

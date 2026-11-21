@@ -1,12 +1,11 @@
-import request from 'supertest';
 import { describe, expect, it } from 'vitest';
-import { buildTestApp } from './helpers.js';
+import { buildTestApp, post } from './helpers.js';
 
 const body = { name: 'Ricardo', email: 'Ricardo@Example.com', password: 'Clave#Segura123' };
 
 describe('POST /api/v1/auth/register', () => {
   it('responde 201 con el perfil y el correo normalizado', async () => {
-    const res = await request(buildTestApp()).post('/api/v1/auth/register').send(body);
+    const res = await post(buildTestApp(), '/api/v1/auth/register').send(body);
 
     expect(res.status).toBe(201);
     expect(res.body.user).toMatchObject({
@@ -17,7 +16,7 @@ describe('POST /api/v1/auth/register', () => {
   });
 
   it('nunca devuelve la contraseña ni su hash', async () => {
-    const res = await request(buildTestApp()).post('/api/v1/auth/register').send(body);
+    const res = await post(buildTestApp(), '/api/v1/auth/register').send(body);
 
     const text = JSON.stringify(res.body);
     expect(text).not.toContain('Clave#Segura123');
@@ -26,19 +25,22 @@ describe('POST /api/v1/auth/register', () => {
 
   it('responde 409 si el correo ya existe, aunque cambien las mayúsculas', async () => {
     const app = buildTestApp();
-    await request(app).post('/api/v1/auth/register').send(body);
-    const res = await request(app)
-      .post('/api/v1/auth/register')
-      .send({ ...body, email: 'RICARDO@example.com' });
+    await post(app, '/api/v1/auth/register').send(body);
+    const res = await post(app, '/api/v1/auth/register').send({
+      ...body,
+      email: 'RICARDO@example.com',
+    });
 
     expect(res.status).toBe(409);
     expect(res.body.error.code).toBe('EMAIL_ALREADY_REGISTERED');
   });
 
   it('responde 400 con los errores de cada campo', async () => {
-    const res = await request(buildTestApp())
-      .post('/api/v1/auth/register')
-      .send({ name: 'R', email: 'no-es-correo', password: 'corta' });
+    const res = await post(buildTestApp(), '/api/v1/auth/register').send({
+      name: 'R',
+      email: 'no-es-correo',
+      password: 'corta',
+    });
 
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
@@ -48,9 +50,11 @@ describe('POST /api/v1/auth/register', () => {
   });
 
   it('ignora campos extra como la moneda o un id (evita la asignación masiva)', async () => {
-    const res = await request(buildTestApp())
-      .post('/api/v1/auth/register')
-      .send({ ...body, id: 'id-elegido-por-el-atacante', currency: 'EUR' });
+    const res = await post(buildTestApp(), '/api/v1/auth/register').send({
+      ...body,
+      id: 'id-elegido-por-el-atacante',
+      currency: 'EUR',
+    });
 
     expect(res.status).toBe(201);
     expect(res.body.user.id).not.toBe('id-elegido-por-el-atacante');

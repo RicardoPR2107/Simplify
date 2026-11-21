@@ -5,6 +5,7 @@ import type { AuthController } from './auth.controller.js';
 
 export function createAuthRouter(controller: AuthController): Router {
   const router = Router();
+  router.get('/csrf', controller.csrf);
   router.post('/register', validate({ body: registerSchema }), controller.register);
   router.post('/login', validate({ body: loginSchema }), controller.login);
   router.post('/refresh', controller.refresh);
