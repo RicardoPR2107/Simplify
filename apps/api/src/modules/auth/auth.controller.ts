@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import type { LoginInput, RegisterInput } from '@simplify/shared';
+import type { LoginInput, RegisterInput, UpdateProfileInput } from '@simplify/shared';
 import { issueCsrfToken } from '../../middlewares/csrf.js';
 import type { AuthService } from './auth.service.js';
 import { clearSessionCookies, REFRESH_COOKIE, setSessionCookies } from './cookies.js';
@@ -60,6 +60,12 @@ export class AuthController {
   /** Perfil del usuario autenticado (`requireAuth` ya dejó `req.userId`). */
   me = async (req: Request, res: Response): Promise<void> => {
     res.json({ user: await this.auth.getProfile(req.userId!) });
+  };
+
+  /** RF-04, RF-18: el id sale de la sesión, nunca del cuerpo de la petición. */
+  updateMe = async (req: Request, res: Response): Promise<void> => {
+    const input = req.validated?.body as UpdateProfileInput;
+    res.json({ user: await this.auth.updateProfile(req.userId!, input) });
   };
 }
 

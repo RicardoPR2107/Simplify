@@ -34,8 +34,12 @@ export const TEST_CSRF_TOKEN = 'token-csrf-de-pruebas-0123456789abcdefghijk';
 
 /** POST con token CSRF (cookie + cabecera), más las cookies extra que se pasen. */
 export function post(app: Express, url: string, cookies: string[] = []) {
-  return request(app)
-    .post(url)
+  return withCsrf(request(app).post(url), cookies);
+}
+
+/** Añade el token CSRF a cualquier petición (PATCH, DELETE…). */
+export function withCsrf(test: request.Test, cookies: string[] = []) {
+  return test
     .set('Cookie', [`simplify_csrf=${TEST_CSRF_TOKEN}`, ...cookies])
     .set('X-CSRF-Token', TEST_CSRF_TOKEN);
 }

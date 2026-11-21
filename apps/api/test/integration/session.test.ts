@@ -85,3 +85,14 @@ describe('Límite de intentos con base de datos real', () => {
     expect(rows.every((row) => !row.key.includes('ricardo'))).toBe(true);
   });
 });
+
+describe('Perfil con base de datos real', () => {
+  it('guarda el cambio de nombre y moneda', async () => {
+    const agent = await csrfAgent(app);
+    await agent.post('/api/v1/auth/register').send(account).expect(201);
+    await agent.patch('/api/v1/me').send({ name: 'Ricardo Palma', currency: 'PEN' }).expect(200);
+
+    const user = await prisma.user.findUniqueOrThrow({ where: { email: account.email } });
+    expect(user).toMatchObject({ name: 'Ricardo Palma', currency: 'PEN' });
+  });
+});

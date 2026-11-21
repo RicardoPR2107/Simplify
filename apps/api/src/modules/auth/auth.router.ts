@@ -1,5 +1,5 @@
 import { Router, type RequestHandler } from 'express';
-import { loginSchema, registerSchema } from '@simplify/shared';
+import { loginSchema, registerSchema, updateProfileSchema } from '@simplify/shared';
 import { validate } from '../../middlewares/validate.js';
 import type { AuthController } from './auth.controller.js';
 
@@ -18,5 +18,6 @@ export function createMeRouter(controller: AuthController, requireAuth: RequestH
   const router = Router();
   router.use(requireAuth);
   router.get('/', controller.me);
+  router.patch('/', validate({ body: updateProfileSchema }), controller.updateMe);
   return router;
 }

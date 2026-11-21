@@ -1,4 +1,10 @@
-import { ErrorCode, type LoginInput, type RegisterInput, type UserProfile } from '@simplify/shared';
+import {
+  ErrorCode,
+  type LoginInput,
+  type RegisterInput,
+  type UpdateProfileInput,
+  type UserProfile,
+} from '@simplify/shared';
 import { AppError } from '../../errors/app-error.js';
 import type { PasswordHasher } from '../../lib/password.js';
 import type { UserRecord, UserRepository } from './auth.repository.js';
@@ -52,6 +58,16 @@ export class AuthService {
   /** Perfil del usuario autenticado. Si la cuenta ya no existe, la sesión no es válida. */
   async getProfile(userId: string): Promise<UserProfile> {
     const user = await this.users.findById(userId);
+    if (!user) throw new AppError(ErrorCode.UNAUTHENTICATED);
+    return toProfile(user);
+  }
+
+  /**
+   * RF-04 y RF-18: cambia el nombre o la moneda.
+   * La moneda solo cambia cómo se muestran los importes: no convierte los movimientos existentes.
+   */
+  async updateProfile(userId: string, input: UpdateProfileInput): Promise<UserProfile> {
+    const user = await this.users.updateProfile(userId, input);
     if (!user) throw new AppError(ErrorCode.UNAUTHENTICATED);
     return toProfile(user);
   }
