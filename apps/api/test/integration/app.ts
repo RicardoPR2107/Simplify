@@ -5,6 +5,7 @@ import { PrismaLoginAttemptRepository } from '../../src/modules/auth/login-attem
 import { PrismaRefreshTokenRepository } from '../../src/modules/auth/refresh-token.repository.js';
 import { PrismaCategoryRepository } from '../../src/modules/categories/category.repository.js';
 import { PrismaMovementRepository } from '../../src/modules/movements/movement.repository.js';
+import { PrismaSummaryRepository } from '../../src/modules/summary/summary.repository.js';
 import { buildTestApp } from '../helpers.js';
 
 /** App con los repositorios reales de Prisma y Argon2id, como en producción. */
@@ -16,6 +17,7 @@ export function buildIntegrationApp(prisma: PrismaClient) {
       loginAttempts: new PrismaLoginAttemptRepository(prisma),
       categories: new PrismaCategoryRepository(prisma),
       movements: new PrismaMovementRepository(prisma),
+      summaries: new PrismaSummaryRepository(prisma),
     },
     passwordHasher: argon2Hasher,
   });

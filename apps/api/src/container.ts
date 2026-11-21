@@ -15,6 +15,9 @@ import { CategoryService } from './modules/categories/category.service.js';
 import { MovementController } from './modules/movements/movement.controller.js';
 import type { MovementRepository } from './modules/movements/movement.repository.js';
 import { MovementService } from './modules/movements/movement.service.js';
+import { SummaryController } from './modules/summary/summary.controller.js';
+import type { SummaryRepository } from './modules/summary/summary.repository.js';
+import { SummaryService } from './modules/summary/summary.service.js';
 import { HealthController } from './modules/health/health.controller.js';
 import { HealthService, type DatabaseProbe } from './modules/health/health.service.js';
 
@@ -31,6 +34,7 @@ export interface Dependencies {
     loginAttempts: LoginAttemptRepository;
     categories: CategoryRepository;
     movements: MovementRepository;
+    summaries: SummaryRepository;
   };
   passwordHasher: PasswordHasher;
   /** Reloj inyectable: las pruebas lo adelantan para comprobar vencimientos. */
@@ -53,6 +57,7 @@ export function buildControllers(deps: Dependencies, config: AppConfig) {
     movements: new MovementController(
       new MovementService(deps.repositories.movements, deps.repositories.categories),
     ),
+    summaries: new SummaryController(new SummaryService(deps.repositories.summaries)),
     requireAuth: requireAuth(tokens),
   };
 }

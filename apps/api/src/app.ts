@@ -11,6 +11,7 @@ import { errorHandler, notFoundHandler } from './middlewares/error-handler.js';
 import { createAuthRouter, createMeRouter } from './modules/auth/auth.router.js';
 import { createCategoryRouter } from './modules/categories/category.router.js';
 import { createMovementRouter } from './modules/movements/movement.router.js';
+import { createSummaryRouter } from './modules/summary/summary.router.js';
 import { createHealthRouter } from './modules/health/health.router.js';
 
 export interface AppOptions {
@@ -74,6 +75,7 @@ export function createApp({ env, logger, deps }: AppOptions): Express {
     '/api/v1/movements',
     createMovementRouter(controllers.movements, controllers.requireAuth),
   );
+  app.use('/api/v1/summary', createSummaryRouter(controllers.summaries, controllers.requireAuth));
 
   // 6. Errores: siempre al final.
   app.use(notFoundHandler);

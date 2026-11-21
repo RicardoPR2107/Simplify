@@ -7,6 +7,7 @@ import { PrismaUserRepository } from './modules/auth/auth.repository.js';
 import { PrismaLoginAttemptRepository } from './modules/auth/login-attempt.repository.js';
 import { PrismaCategoryRepository } from './modules/categories/category.repository.js';
 import { PrismaMovementRepository } from './modules/movements/movement.repository.js';
+import { PrismaSummaryRepository } from './modules/summary/summary.repository.js';
 import { PrismaRefreshTokenRepository } from './modules/auth/refresh-token.repository.js';
 
 const env = loadEnv();
@@ -35,6 +36,7 @@ const app = createApp({
       loginAttempts: new PrismaLoginAttemptRepository(prisma),
       categories: new PrismaCategoryRepository(prisma),
       movements: new PrismaMovementRepository(prisma),
+      summaries: new PrismaSummaryRepository(prisma),
     },
     passwordHasher: argon2Hasher,
   },

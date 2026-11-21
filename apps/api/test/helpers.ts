@@ -6,6 +6,7 @@ import type { Dependencies } from '../src/container.js';
 import { fakePasswordHasher } from './fakes/fake-password-hasher.js';
 import { InMemoryCategoryRepository } from './fakes/in-memory-category.repository.js';
 import { InMemoryMovementRepository } from './fakes/in-memory-movement.repository.js';
+import { InMemorySummaryRepository } from './fakes/in-memory-summary.repository.js';
 import { InMemoryLoginAttemptRepository } from './fakes/in-memory-login-attempt.repository.js';
 import { InMemoryRefreshTokenRepository } from './fakes/in-memory-refresh-token.repository.js';
 import { InMemoryUserRepository } from './fakes/in-memory-user.repository.js';
@@ -22,7 +23,10 @@ type TestOverrides = Partial<Omit<Dependencies, 'repositories'>> & {
  */
 export function buildTestApp(overrides: TestOverrides = {}) {
   const { repositories, ...rest } = overrides;
-  const categories = repositories?.categories ?? new InMemoryCategoryRepository();
+  const categories = (repositories?.categories ??
+    new InMemoryCategoryRepository()) as InMemoryCategoryRepository;
+  const movements = (repositories?.movements ??
+    new InMemoryMovementRepository(categories)) as InMemoryMovementRepository;
   const deps: Dependencies = {
     database: { ping: async () => true },
     passwordHasher: fakePasswordHasher,
@@ -32,7 +36,8 @@ export function buildTestApp(overrides: TestOverrides = {}) {
       refreshTokens: new InMemoryRefreshTokenRepository(),
       loginAttempts: new InMemoryLoginAttemptRepository(),
       categories,
-      movements: new InMemoryMovementRepository(categories as InMemoryCategoryRepository),
+      movements,
+      summaries: new InMemorySummaryRepository(movements, categories),
       ...repositories,
     },
   };
