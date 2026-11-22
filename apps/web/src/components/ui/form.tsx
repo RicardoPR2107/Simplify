@@ -2,6 +2,7 @@ import {
   useId,
   useState,
   type InputHTMLAttributes,
+  type Ref,
   type ReactNode,
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
@@ -9,6 +10,8 @@ import {
 import { AlertIcon, EyeIcon, EyeOffIcon } from './icons';
 
 interface TextFieldProps extends InputHTMLAttributes<HTMLInputElement> {
+  /** En React 19 `ref` es una prop más; se pasa al <input>. */
+  ref?: Ref<HTMLInputElement>;
   label: string;
   error?: string;
   hint?: ReactNode;
