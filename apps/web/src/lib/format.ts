@@ -47,3 +47,14 @@ export function todayISO(now = new Date()): string {
 export function normalizeAmountInput(value: string): string {
   return value.trim().replace(/\s/g, '').replace(',', '.');
 }
+
+/** Importe abreviado para los ejes de los gráficos: "S/ 1.5 mil". Solo para mostrar. */
+export function formatCompactMoney(amount: number, currency: Currency): string {
+  return new Intl.NumberFormat('es-PE', {
+    style: 'currency',
+    currency,
+    currencyDisplay: 'narrowSymbol',
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(amount);
+}

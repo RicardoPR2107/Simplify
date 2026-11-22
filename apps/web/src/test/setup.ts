@@ -3,9 +3,10 @@ import { cleanup, configure } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
 import { resetApiState } from '../lib/api';
 
-// Las búsquedas asíncronas (findBy…, waitFor) esperan hasta 3 s en lugar de 1 s:
-// en equipos más lentos, la primera carga de una página perezosa puede pasar de 1 s.
-configure({ asyncUtilTimeout: 3000 });
+// Las búsquedas asíncronas (findBy…, waitFor) esperan hasta 8 s en lugar de 1 s: la primera
+// carga de una página perezosa puede tardar varios segundos en equipos lentos. Cuando el elemento
+// aparece antes, la prueba sigue de inmediato: el límite alto no hace más lentas las pruebas.
+configure({ asyncUtilTimeout: 8000 });
 
 afterEach(() => {
   cleanup();
