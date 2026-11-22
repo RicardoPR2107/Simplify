@@ -12,3 +12,14 @@ export function toFieldErrors(error: z.ZodError): Record<string, string[]> {
   }
   return fields;
 }
+
+/** Valida y, si falla, devuelve los errores por campo. Lo usan los formularios del frontend. */
+export function parseWithFieldErrors<T>(
+  schema: z.ZodType<T>,
+  values: unknown,
+): { success: true; data: T } | { success: false; fields: Record<string, string[]> } {
+  const result = schema.safeParse(values);
+  return result.success
+    ? { success: true, data: result.data }
+    : { success: false, fields: toFieldErrors(result.error) };
+}

@@ -12,6 +12,7 @@ const AMOUNT_PATTERN = /^\d{1,10}(\.\d{1,2})?$/;
 export const amountSchema = z
   .string({ error: 'El importe es obligatorio.' })
   .trim()
+  .min(1, 'Escribe el importe.')
   .regex(AMOUNT_PATTERN, 'Usa solo números, con hasta 2 decimales (por ejemplo 85.50).')
   .refine((value) => !/^0+(\.0{1,2})?$/.test(value), {
     message: 'El importe debe ser mayor que cero.',
