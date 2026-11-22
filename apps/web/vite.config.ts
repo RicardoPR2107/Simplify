@@ -26,5 +26,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: false,
+    // La primera prueba de cada archivo compila la página perezosa desde cero: en equipos lentos
+    // o en un CI cargado puede tardar varios segundos. 15 s por prueba deja margen de sobra.
+    testTimeout: 15_000,
   },
 });

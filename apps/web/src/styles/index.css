@@ -28,6 +28,10 @@
   --income-bg: #e5f1da;
   --expense: #a4553a;
   --expense-bg: #f6e7e0;
+  /* Colores de los gráficos, validados para daltonismo (scripts/validate_palette.js):
+     ΔE 10.1 en el peor caso (deuteranopía) sobre la tarjeta clara. */
+  --chart-income: #4f9f63;
+  --chart-expense: #a94e2c;
   --ring: #2e6b52;
 }
 
@@ -55,6 +59,9 @@
   --income-bg: #223a28;
   --expense: #e3a184;
   --expense-bg: #362720;
+  /* ΔE 11.6 en el peor caso sobre la tarjeta oscura, contraste ≥ 3:1. */
+  --chart-income: #5ca85d;
+  --chart-expense: #b14b2c;
   --ring: #b8d86b;
 }
 
@@ -83,6 +90,8 @@
   --color-income-bg: var(--income-bg);
   --color-expense: var(--expense);
   --color-expense-bg: var(--expense-bg);
+  --color-chart-income: var(--chart-income);
+  --color-chart-expense: var(--chart-expense);
   --radius-card: 24px;
 }
 

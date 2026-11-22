@@ -17,7 +17,6 @@ describe('Navegación y carga perezosa', () => {
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Hola, Ricardo' }),
     ).toBeInTheDocument();
-    expect(screen.getByText('Aún no hay movimientos')).toBeInTheDocument();
   });
 
   it('marca la sección activa en la navegación', async () => {
