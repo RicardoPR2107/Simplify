@@ -134,3 +134,42 @@ export const LogOutIcon = (p: SVGProps<SVGSVGElement>) => (
     <path d="M10 16.5 5.5 12 10 7.5M5.5 12H15" />
   </Icon>
 );
+
+export const SearchIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <circle cx="11" cy="11" r="7" />
+    <path d="m20 20-3.5-3.5" />
+  </Icon>
+);
+
+export const PencilIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4Z" />
+    <path d="m13.5 6.5 4 4" />
+  </Icon>
+);
+
+export const TrashIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <path d="M4 7h16M10 11v6M14 11v6" />
+    <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />
+  </Icon>
+);
+
+export const CloseIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <path d="M6 6l12 12M18 6 6 18" />
+  </Icon>
+);
+
+export const ChevronRightIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon strokeWidth="2.2" {...p}>
+    <path d="m9 18 6-6-6-6" />
+  </Icon>
+);
+
+export const FilterIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <path d="M4 6h16M7 12h10M10 18h4" />
+  </Icon>
+);

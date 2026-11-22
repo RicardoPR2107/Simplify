@@ -11,7 +11,13 @@ type Handler =
 
 export interface ApiMock {
   /** Peticiones recibidas: método, ruta (sin /api/v1), cuerpo y cabeceras. */
-  calls: Array<{ method: string; path: string; body: unknown; headers: Record<string, string> }>;
+  calls: Array<{
+    method: string;
+    path: string;
+    query: URLSearchParams;
+    body: unknown;
+    headers: Record<string, string>;
+  }>;
   on(route: string, handler: Handler): void;
 }
 
@@ -31,12 +37,14 @@ export function mockApi(routes: Record<string, Handler> = {}): ApiMock {
     'fetch',
     vi.fn(async (url: string, init: RequestInit = {}) => {
       const method = init.method ?? 'GET';
-      const path = url.replace(/^\/api\/v1/, '').split('?')[0]!;
+      const [rawPath, search = ''] = url.replace(/^\/api\/v1/, '').split('?');
+      const path = rawPath!;
       const key = `${method} ${path}`;
       const body = typeof init.body === 'string' ? JSON.parse(init.body) : undefined;
       mock.calls.push({
         method,
         path,
+        query: new URLSearchParams(search),
         body,
         headers: (init.headers ?? {}) as Record<string, string>,
       });

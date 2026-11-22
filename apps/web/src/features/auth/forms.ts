@@ -27,8 +27,11 @@ export function describeError(error: unknown): string {
   return error.message;
 }
 
-/** Lleva el foco al primer campo con error para que se vea y lo anuncien los lectores de pantalla. */
+/**
+ * Lleva el foco al primer campo con error, en el orden en que aparecen en pantalla,
+ * para que se vea y lo anuncien los lectores de pantalla.
+ */
 export function focusFirstError(form: HTMLFormElement | null, errors: FieldErrors): void {
-  const first = Object.keys(errors).find((key) => errors[key]);
-  if (first) form?.querySelector<HTMLInputElement>(`[name="${first}"]`)?.focus();
+  const fields = Array.from(form?.elements ?? []) as HTMLInputElement[];
+  fields.find((field) => field.name && errors[field.name])?.focus();
 }
