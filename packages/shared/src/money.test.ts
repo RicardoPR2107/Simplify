@@ -25,4 +25,10 @@ describe('Aritmética de dinero en céntimos', () => {
     expect(percentage(1235n, 10000n)).toBe(12.4);
     expect(percentage(5n, 0n)).toBe(0);
   });
+
+  it('redondea igual los porcentajes negativos (tasa de ahorro con déficit)', () => {
+    expect(percentage(-30050n, 300000n)).toBe(-10);
+    expect(percentage(-1235n, 10000n)).toBe(-12.4);
+    expect(percentage(-1n, 3n)).toBe(-33.3);
+  });
 });

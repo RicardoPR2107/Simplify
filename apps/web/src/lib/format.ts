@@ -48,13 +48,16 @@ export function normalizeAmountInput(value: string): string {
   return value.trim().replace(/\s/g, '').replace(',', '.');
 }
 
-/** Importe abreviado para los ejes de los gráficos: "S/ 1.5 mil". Solo para mostrar. */
+/**
+ * Importe abreviado para ejes y etiquetas de gráficos: "S/ 850", "S/ 1.3 K". Solo para mostrar;
+ * las cifras exactas siempre están disponibles en otra parte (tabla o detalle).
+ */
 export function formatCompactMoney(amount: number, currency: Currency): string {
   return new Intl.NumberFormat('es-PE', {
     style: 'currency',
     currency,
     currencyDisplay: 'narrowSymbol',
     notation: 'compact',
-    maximumFractionDigits: 1,
+    maximumFractionDigits: Math.abs(amount) >= 1000 ? 1 : 0,
   }).format(amount);
 }

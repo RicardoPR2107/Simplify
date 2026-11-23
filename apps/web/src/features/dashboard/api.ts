@@ -1,5 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import type { CategorySummary, EvolutionSummary, MonthSummary } from '@simplify/shared';
+import type {
+  CategorySummary,
+  EvolutionSummary,
+  MonthSummary,
+  MovementType,
+} from '@simplify/shared';
 import { api } from '../../lib/api';
 
 export const summaryKey = ['summary'] as const;
@@ -11,11 +16,11 @@ export function useMonthSummary(year: number, month: number) {
   });
 }
 
-export function useExpensesByCategory(year: number, month: number) {
+export function useCategorySummary(year: number, month: number, type: MovementType) {
   return useQuery({
-    queryKey: [...summaryKey, 'categories', year, month],
+    queryKey: [...summaryKey, 'categories', type, year, month],
     queryFn: () =>
-      api.get<CategorySummary>(`/summary/categories?year=${year}&month=${month}&type=EXPENSE`),
+      api.get<CategorySummary>(`/summary/categories?year=${year}&month=${month}&type=${type}`),
   });
 }
 

@@ -47,9 +47,16 @@ export function fromCents(cents: bigint): string {
   return `${negative ? '-' : ''}${units}.${decimals}`;
 }
 
-/** Porcentaje de `part` sobre `total` con 1 decimal, redondeado (12.35 → 12.4). Solo para mostrar. */
+/**
+ * Porcentaje de `part` sobre `total` con 1 decimal, redondeado (12.35 → 12.4; −10.02 → −10.0).
+ * Solo para mostrar. Se redondea el valor absoluto y luego se aplica el signo, porque la división
+ * de bigint trunca hacia cero y sesgaría los negativos.
+ */
 export function percentage(part: bigint, total: bigint): number {
   if (total === 0n) return 0;
-  const tenths = (part * 2000n + total) / (2n * total); // redondeo a la décima más cercana
-  return Number(tenths) / 10;
+  const negative = part < 0n !== total < 0n;
+  const absPart = part < 0n ? -part : part;
+  const absTotal = total < 0n ? -total : total;
+  const tenths = (absPart * 2000n + absTotal) / (2n * absTotal); // redondeo a la décima más cercana
+  return (negative ? -Number(tenths) : Number(tenths)) / 10;
 }
