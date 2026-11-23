@@ -23,7 +23,7 @@ export function RouteErrorPage() {
         <button
           type="button"
           onClick={() => window.location.reload()}
-          className="h-12 rounded-full bg-hero px-6 font-semibold text-on-hero"
+          className="h-12 rounded-full bg-hero px-6 hover:bg-hero-hover font-semibold text-on-hero"
         >
           Reintentar
         </button>

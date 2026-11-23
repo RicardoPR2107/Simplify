@@ -19,6 +19,7 @@
     "format:check": "prettier --check .",
     "typecheck": "npm run build -w @simplify/shared && npm run typecheck --workspaces --if-present",
     "test": "npm run build -w @simplify/shared && npm run test --workspaces --if-present",
+    "test:e2e": "npm run test:e2e -w @simplify/e2e",
     "db:up": "docker compose up -d db db_test",
     "db:down": "docker compose down",
     "prepare": "husky"
@@ -47,5 +48,8 @@
     "prisma@7.10.1": true,
     "@prisma/engines@7.10.1": true,
     "esbuild@0.28.2": true
+  },
+  "overrides": {
+    "effect": "^3.22.5"
   }
 }

@@ -5,13 +5,17 @@ import express, { type Express } from 'express';
 import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
 import type { Logger } from 'pino';
-import type { Env } from './config/env.js';
-import { buildControllers, type Dependencies } from './container.js';
+import { buildControllers, type AppConfig, type Dependencies } from './container.js';
+import { csrfProtection } from './middlewares/csrf.js';
 import { errorHandler, notFoundHandler } from './middlewares/error-handler.js';
+import { createAuthRouter, createMeRouter } from './modules/auth/auth.router.js';
+import { createCategoryRouter } from './modules/categories/category.router.js';
+import { createMovementRouter } from './modules/movements/movement.router.js';
+import { createSummaryRouter } from './modules/summary/summary.router.js';
 import { createHealthRouter } from './modules/health/health.router.js';
 
 export interface AppOptions {
-  env: Pick<Env, 'NODE_ENV' | 'CORS_ORIGIN'>;
+  env: AppConfig;
   logger: Logger;
   deps: Dependencies;
 }
@@ -22,7 +26,7 @@ export interface AppOptions {
  */
 export function createApp({ env, logger, deps }: AppOptions): Express {
   const app = express();
-  const controllers = buildControllers(deps);
+  const controllers = buildControllers(deps, env);
 
   // Detrás de Nginx (Fase 6): confía en el primer proxy para leer la IP real del cliente.
   app.set('trust proxy', 1);
@@ -35,6 +39,7 @@ export function createApp({ env, logger, deps }: AppOptions): Express {
       origin: env.CORS_ORIGIN,
       credentials: true,
       methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+      allowedHeaders: ['Content-Type', 'X-CSRF-Token', 'X-Request-Id'],
     }),
   );
 
@@ -55,10 +60,24 @@ export function createApp({ env, logger, deps }: AppOptions): Express {
   app.use(express.json({ limit: '100kb' }));
   app.use(cookieParser());
 
-  // 4. Rutas versionadas.
-  app.use('/api/v1/health', createHealthRouter(controllers.health));
+  // 4. CSRF: toda petición que modifica datos debe traer el token en la cabecera X-CSRF-Token.
+  app.use('/api/v1', csrfProtection());
 
-  // 5. Errores: siempre al final.
+  // 5. Rutas versionadas.
+  app.use('/api/v1/health', createHealthRouter(controllers.health));
+  app.use('/api/v1/auth', createAuthRouter(controllers.auth));
+  app.use('/api/v1/me', createMeRouter(controllers.auth, controllers.requireAuth));
+  app.use(
+    '/api/v1/categories',
+    createCategoryRouter(controllers.categories, controllers.requireAuth),
+  );
+  app.use(
+    '/api/v1/movements',
+    createMovementRouter(controllers.movements, controllers.requireAuth),
+  );
+  app.use('/api/v1/summary', createSummaryRouter(controllers.summaries, controllers.requireAuth));
+
+  // 6. Errores: siempre al final.
   app.use(notFoundHandler);
   app.use(errorHandler);
 
