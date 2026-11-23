@@ -10,8 +10,6 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   DATABASE_URL: z.url({ error: 'DATABASE_URL debe ser una URL de PostgreSQL válida.' }),
   CORS_ORIGIN: z.url({ error: 'CORS_ORIGIN debe ser la URL del frontend.' }),
-  // Clave para firmar los JWT. Larga y aleatoria; distinta en cada entorno y nunca en el código.
-  JWT_SECRET: z.string().min(32, { error: 'JWT_SECRET debe tener al menos 32 caracteres.' }),
 });
 
 export type Env = z.infer<typeof envSchema>;
