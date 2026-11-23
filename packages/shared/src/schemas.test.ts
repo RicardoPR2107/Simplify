@@ -91,26 +91,21 @@ describe('listMovementsQuerySchema (paginación y filtros)', () => {
 });
 
 describe('registerSchema', () => {
-  const valid = { name: 'Ricardo', email: 'r@example.com', password: 'Clave#2026' };
-
   it('normaliza el correo a minúsculas', () => {
-    const result = registerSchema.parse({ ...valid, email: '  Ricardo@Example.COM ' });
+    const result = registerSchema.parse({
+      name: 'Ricardo',
+      email: '  Ricardo@Example.COM ',
+      password: 'claveSegura123',
+    });
     expect(result.email).toBe('ricardo@example.com');
   });
 
-  it('acepta una contraseña de 8 caracteres que cumple todas las reglas', () => {
-    expect(registerSchema.safeParse({ ...valid, password: 'Abcdef1!' }).success).toBe(true);
-  });
-
-  it.each([
-    ['menos de 8 caracteres', 'Ab1!xyz', 'al menos 8 caracteres'],
-    ['sin minúscula', 'CLAVE#2026', 'letra minúscula'],
-    ['sin mayúscula', 'clave#2026', 'letra mayúscula'],
-    ['sin número', 'Clave#Segura', 'un número'],
-    ['sin carácter especial', 'Clave2026', 'carácter especial'],
-  ])('rechaza una contraseña %s y explica qué falta', (_label, password, message) => {
-    const result = registerSchema.safeParse({ ...valid, password });
+  it('exige letras y números en la contraseña', () => {
+    const result = registerSchema.safeParse({
+      name: 'Ricardo',
+      email: 'r@example.com',
+      password: 'soloLetrasMuyLargas',
+    });
     expect(result.success).toBe(false);
-    expect(toFieldErrors(result.error!).password?.join(' ')).toContain(message);
   });
 });

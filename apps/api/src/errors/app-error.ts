@@ -25,23 +25,16 @@ export class AppError extends Error {
   readonly code: ErrorCode;
   readonly status: number;
   readonly fields: Record<string, string[]> | undefined;
-  /** Segundos que el cliente debe esperar antes de reintentar (cabecera Retry-After en 429). */
-  readonly retryAfterSeconds: number | undefined;
 
   constructor(
     code: ErrorCode,
-    options: {
-      message?: string;
-      fields?: Record<string, string[]>;
-      retryAfterSeconds?: number;
-    } = {},
+    options: { message?: string; fields?: Record<string, string[]> } = {},
   ) {
     super(options.message ?? errorMessages[code]);
     this.name = 'AppError';
     this.code = code;
     this.status = STATUS_BY_CODE[code];
     this.fields = options.fields;
-    this.retryAfterSeconds = options.retryAfterSeconds;
   }
 
   static notFound(): AppError {

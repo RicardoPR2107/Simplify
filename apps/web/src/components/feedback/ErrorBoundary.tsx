@@ -45,7 +45,7 @@ export class ErrorBoundary extends Component<Props, State> {
         <button
           type="button"
           onClick={this.reset}
-          className="h-11 rounded-full bg-hero px-5 hover:bg-hero-hover font-semibold text-on-hero"
+          className="h-11 rounded-full bg-hero px-5 font-semibold text-on-hero"
         >
           Reintentar
         </button>

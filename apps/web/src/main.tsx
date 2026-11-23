@@ -1,12 +1,21 @@
-import { QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router';
-import { createQueryClient } from './lib/queryClient';
 import { routes } from './routes';
 import './styles/index.css';
 
-const queryClient = createQueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Evita pedir lo mismo al backend una y otra vez (requisito 5.1).
+      staleTime: 30_000,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
 const router = createBrowserRouter(routes);
 
 const root = document.getElementById('root');

@@ -24,9 +24,6 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   if (err instanceof AppError) {
     status = err.status;
     body = { error: { code: err.code, message: err.message, requestId, fields: err.fields } };
-    if (err.retryAfterSeconds !== undefined) {
-      res.setHeader('Retry-After', String(err.retryAfterSeconds));
-    }
   } else if (err instanceof ZodError) {
     status = 400;
     body = {

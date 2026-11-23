@@ -1,146 +1,74 @@
-# 💰 Simplify
+# Simplify
 
-![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-24-339933?logo=nodedotjs&logoColor=white)
-![Express](https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)
-![Prisma](https://img.shields.io/badge/Prisma-7-2D3748?logo=prisma&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
-![Nginx](https://img.shields.io/badge/Nginx-009639?logo=nginx&logoColor=white)
-![Playwright](https://img.shields.io/badge/Playwright-45ba4b?logo=playwright&logoColor=white)
-![k6](https://img.shields.io/badge/k6-7D64FF?logo=k6&logoColor=white)
+Aplicación web de finanzas personales para **registrar, organizar y analizar ingresos y gastos**. Proyecto de portafolio Full Stack + QA.
 
-Aplicación web full stack de finanzas personales para registrar, organizar y analizar ingresos y gastos. Calcula el balance de cada mes y muestra en qué categorías se usa el dinero. Es un proyecto de portafolio para practicar diseño de sistemas, lógica de negocio, manejo preciso de dinero, seguridad, pruebas automatizadas y escalabilidad.
+**Stack:** TypeScript · React · Node.js · Express · PostgreSQL · Prisma · Zod · Vitest · Playwright · Docker · Nginx · GitHub Actions
 
-> 🚧 **En desarrollo.** La demo en vivo y las capturas se agregarán cuando el dashboard esté terminado.
+> Estado: **Fase 0 completada** (diseño del sistema y repositorio). Ver la hoja de ruta del proyecto.
 
-## 📦 Tecnologías
+## Requisitos
 
-- **Frontend:** React, TypeScript, Vite, React Router, TanStack Query, React Hook Form, Tailwind CSS, Recharts
-- **Backend:** Node.js, Express, Prisma, PostgreSQL
-- **Validación:** Zod (el mismo esquema en frontend y backend)
-- **Pruebas:** Vitest, React Testing Library, Supertest, Playwright (con axe-core para accesibilidad), k6
-- **Infraestructura:** Docker, Nginx (balanceo de carga), GitHub Actions (CI)
+| Herramienta                                                       | Versión             | Para qué                 |
+| ----------------------------------------------------------------- | ------------------- | ------------------------ |
+| [Node.js](https://nodejs.org)                                     | 24 LTS (o 22.22.2+) | Ejecutar web y API       |
+| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | reciente            | Base de datos PostgreSQL |
+| [Git](https://git-scm.com)                                        | reciente            | Control de versiones     |
 
-## ✨ Funcionalidades
-
-Las marcadas con 🚧 están en construcción: la API ya está lista y falta la pantalla.
-
-- 🚧 **Crear una cuenta** con una contraseña segura (mínimo 8 caracteres, con mayúscula, minúscula, número y carácter especial).
-- 🚧 **Iniciar y cerrar sesión**, con la sesión guardada en cookies protegidas y límite de intentos.
-- 🚧 **Registrar ingresos y gastos** con descripción, importe, categoría, fecha y notas. El importe siempre es positivo: la app decide si suma o resta según el tipo.
-- 🚧 **Organizar en categorías** propias o predeterminadas. Una categoría con movimientos no se puede eliminar sin reasignarlos antes.
-- 🚧 **Consultar el historial** con filtros por periodo, tipo y categoría, búsqueda por descripción, orden por fecha o importe y paginación.
-- 🚧 **Ver el balance del mes** en un dashboard: ingresos, gastos, evolución de los últimos 6 meses y gastos por categoría.
-- 🚧 **Elegir la moneda principal** (USD, PEN, EUR, MXN o COP).
-- **Elegir el tema claro u oscuro** con un botón. Se recuerda la elección y, si no hay una, se usa la del sistema.
-- **Contraer el menú lateral** para ganar espacio. También se recuerda la elección.
-- **Ver pantallas de carga, vacío y error** (incluida la página 404 y el aviso sin conexión).
-
-## ⌨️ Atajos de teclado
-
-Todavía no hay atajos propios, pero toda la app se puede usar con el teclado: `Tab` recorre los elementos y el foco siempre es visible.
-
-## 🏗️ Arquitectura
-
-```mermaid
-flowchart LR
-    U([Navegador · React]) -->|HTTPS| N[Nginx<br/>sirve la web y reparte /api]
-    N --> A1[API · instancia 1]
-    N --> A2[API · instancia 2]
-    A1 --> DB[(PostgreSQL)]
-    A2 --> DB
-```
-
-Nginx sirve la web y reparte las peticiones de la API entre varias instancias de Express, que comparten una base de datos PostgreSQL. Las instancias no guardan nada en memoria, así cualquiera puede atender cualquier petición. Los detalles (capas de la API, modelo de datos y decisiones técnicas) están en [`docs/arquitectura.md`](docs/arquitectura.md).
-
-```
-apps/web         Interfaz en React
-apps/api         API en Express + Prisma
-packages/shared  Esquemas y reglas que usan ambos
-docs             Arquitectura, modelo de datos, contrato OpenAPI y decisiones técnicas (ADR)
-```
-
-## 🧑‍🍳 El proceso
-
-1. Definí los requisitos, las reglas de negocio y el alcance antes de escribir código.
-2. Diseñé la interfaz: minimalista, en verde bosque y lima, con menú lateral desplegable y tema oscuro.
-3. Armé un monorepo con `npm workspaces`: `apps/web`, `apps/api` y `packages/shared`.
-4. Construí la base del backend por capas (rutas, controladores, servicios y repositorio) con Prisma sobre PostgreSQL.
-5. Modelé los datos para que la propia base de datos impida errores: un gasto no puede usar una categoría de ingreso y una categoría con movimientos no se puede borrar.
-6. Configuré la calidad desde el inicio: ESLint, Prettier, pruebas automatizadas y un CI que corre en cada Pull Request.
-7. Implementé la autenticación: contraseñas con Argon2id, sesión en cookies httpOnly con un token de acceso de 15 minutos y uno de renovación que rota en cada uso, protección CSRF y límite de intentos de inicio de sesión guardado en PostgreSQL.
-8. Construí la API de categorías, movimientos y resúmenes: historial con filtros y paginación estable, reasignación de movimientos en una transacción al eliminar una categoría, y balances calculados en PostgreSQL.
-
-## 📚 Lo que aprendí
-
-- A no usar `number` para el dinero: los importes viajan como texto y se guardan como `NUMERIC(12,2)`, porque `0.1 + 0.2` no da `0.3` en JavaScript.
-- A hacer cumplir las reglas de negocio también en la base de datos, no solo en el código.
-- A diseñar para varias instancias desde el principio: nada de sesiones ni contadores en memoria.
-- A no guardar secretos en claro: de los tokens de renovación y de los intentos de inicio de sesión solo se guarda un hash.
-- A no revelar qué correos están registrados: el inicio de sesión responde igual, y tarda lo mismo, si el correo no existe o si la contraseña es incorrecta.
-- A hacer cuentas de dinero en céntimos con `bigint` (enteros exactos) cuando hay que sumar o restar en el código, y a dejar las sumas grandes a la base de datos.
-- A que un recurso de otro usuario responda 404 y no 403: así la API no confirma que existe.
-
-## 💡 Cómo se podría mejorar
-
-- Conectar cuentas bancarias para importar movimientos automáticamente.
-- Varias monedas por usuario con conversión según el tipo de cambio.
-- Presupuestos mensuales por categoría con alertas.
-
-## 🚀 Cómo ejecutarlo
-
-Necesitas Node.js 24 (o 22.22 o superior), npm, Git y Docker Desktop.
+## Puesta en marcha (Windows, macOS o Linux)
 
 ```bash
-git clone https://github.com/RicardoPR2107/Simplify.git
-cd Simplify
+# 1. Instalar dependencias (genera también el cliente de Prisma)
 npm install
+
+# 2. Variables de entorno de la API
+#    Windows (PowerShell): Copy-Item apps/api/.env.example apps/api/.env
+cp apps/api/.env.example apps/api/.env
+
+# 3. Levantar PostgreSQL (desarrollo en :5434 y pruebas en :5433)
+npm run db:up
+
+# 4. Arrancar paquete compartido, API y web a la vez
+npm run dev
 ```
 
-1. Copia `apps/api/.env.example` como `apps/api/.env` (en PowerShell: `Copy-Item apps/api/.env.example apps/api/.env`) y cambia `JWT_SECRET` por una clave propia:
+- Web: http://localhost:5173
+- API: http://localhost:4000/api/v1/health/live
 
-   ```bash
-   node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
-   ```
+## Scripts
 
-2. Levanta PostgreSQL en Docker (desarrollo en el puerto 5434 y pruebas en el 5433):
+| Comando                     | Qué hace                                           |
+| --------------------------- | -------------------------------------------------- |
+| `npm run dev`               | Paquete compartido en modo observación + API + web |
+| `npm test`                  | Todas las pruebas (shared, API, web)               |
+| `npm run lint`              | ESLint en todo el monorepo                         |
+| `npm run typecheck`         | Comprobación de tipos en todos los paquetes        |
+| `npm run build`             | Compila shared, API y web                          |
+| `npm run format`            | Formatea el código con Prettier                    |
+| `npm run db:up` / `db:down` | Enciende o apaga las bases de datos en Docker      |
 
-   ```bash
-   npm run db:up
-   ```
+## Estructura
 
-3. Crea las tablas:
-
-   ```bash
-   npm run db:migrate -w @simplify/api
-   ```
-
-4. Arranca la app:
-
-   ```bash
-   npm run dev
-   ```
-
-5. Abre http://localhost:5173. La API responde en http://localhost:4000/api/v1/health/ready.
-
-### Pruebas
-
-```bash
-npm test             # unitarias, API, componentes e integración con PostgreSQL
-npm run lint         # análisis estático
-npm run typecheck    # revisión de tipos
+```
+apps/api         API REST en capas: Router → Controller → Service → Repository
+apps/web         React con carga perezosa por ruta, tema claro/oscuro y estados de carga/error
+packages/shared  Esquemas Zod y códigos de error usados por la API y la web
+docs/            Arquitectura, modelo de datos, ADRs y contrato OpenAPI
 ```
 
-## 📈 Pruebas de carga y escalabilidad
+## Documentación técnica
 
-_Se agregarán cuando la app esté desplegada con Nginx y varias instancias de la API._
+- [Arquitectura](docs/arquitectura.md)
+- [Modelo de datos](docs/modelo-datos.md)
+- [Contrato de la API (OpenAPI)](docs/api/openapi.yaml)
+- Decisiones de arquitectura (ADR):
+  [0001 Monorepo](docs/adr/0001-monorepo.md) ·
+  [0002 Sesión con JWT en cookies](docs/adr/0002-sesion-jwt-cookies.md) ·
+  [0003 El dinero nunca es un number](docs/adr/0003-dinero-decimal.md) ·
+  [0004 Límite de intentos sin Redis](docs/adr/0004-limite-intentos-sin-redis.md)
 
-## 🎥 Video
+## Calidad
 
-_Se agregará cuando el proyecto esté terminado._
+Cada cambio pasa por:
 
-## 📄 Derechos
-
-© Ricardo Palma. Todos los derechos reservados.
+1. **Antes del commit** (Husky + lint-staged): ESLint y Prettier sobre los archivos modificados.
+2. **En cada push** (GitHub Actions): lint, tipos, pruebas con PostgreSQL real y compilación.

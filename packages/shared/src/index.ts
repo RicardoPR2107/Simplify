@@ -4,4 +4,3 @@ export * from './validation.js';
 export * from './schemas/auth.js';
 export * from './schemas/category.js';
 export * from './schemas/movement.js';
-export * from './schemas/summary.js';
