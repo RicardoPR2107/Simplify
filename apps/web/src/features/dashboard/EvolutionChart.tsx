@@ -3,12 +3,17 @@ import { useState } from 'react';
 import { formatCompactMoney, formatMoney } from '../../lib/format';
 import { periodLabel } from './period';
 
-/** Pasos "redondos" del eje: 1, 2, 2.5, 5 × 10ⁿ, para que las líneas guía caigan en cifras legibles. */
-function niceMax(value: number): number {
+/**
+ * Tope "redondo" del eje, apenas por encima del valor más alto: así las líneas guía (el tope y
+ * su mitad) caen en cifras legibles sin dejar medio gráfico vacío (5,234 → 6,000, no 10,000).
+ */
+export function niceMax(value: number): number {
   if (value <= 0) return 100;
   const magnitude = 10 ** Math.floor(Math.log10(value));
-  for (const step of [1, 2, 2.5, 5, 10]) {
-    if (step * magnitude >= value) return step * magnitude;
+  for (const step of [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10]) {
+    // toPrecision quita restos de coma flotante (3 × 0.1 = 0.30000000000000004).
+    const candidate = Number((step * magnitude).toPrecision(12));
+    if (candidate >= value) return candidate;
   }
   return 10 * magnitude;
 }

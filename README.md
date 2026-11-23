@@ -13,11 +13,29 @@
 
 Aplicación web full stack de finanzas personales para registrar, organizar y analizar ingresos y gastos. Calcula el balance de cada mes y muestra en qué categorías se usa el dinero. Es un proyecto de portafolio para practicar diseño de sistemas, lógica de negocio, manejo preciso de dinero, seguridad, pruebas automatizadas y escalabilidad.
 
-> 🚧 **En desarrollo.** La demo en vivo y las capturas se agregarán cuando el dashboard esté terminado.
+![Demo: registrar un gasto, ver el balance actualizado, buscar en el historial y cambiar al tema oscuro](docs/capturas/demo.gif)
+
+## 📸 Capturas
+
+| Dashboard                                                                  | Dashboard en tema oscuro                                                             |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| ![Dashboard con el balance del mes](docs/capturas/dashboard-claro.png)     | ![Dashboard en tema oscuro](docs/capturas/dashboard-oscuro.png)                      |
+| **Historial con filtros**                                                  | **Estadísticas**                                                                     |
+| ![Historial de movimientos con filtros](docs/capturas/historial-claro.png) | ![Estadísticas de los últimos seis meses](docs/capturas/estadisticas-oscuro.png)     |
+| **Categorías**                                                             | **Nuevo movimiento**                                                                 |
+| ![Categorías de gastos e ingresos](docs/capturas/categorias-claro.png)     | ![Formulario para registrar un movimiento](docs/capturas/nuevo-movimiento-claro.png) |
+
+<p align="center">
+  <img src="docs/capturas/movil-dashboard.png" alt="Dashboard en el teléfono" width="260" />
+  &nbsp;&nbsp;
+  <img src="docs/capturas/movil-historial.png" alt="Historial en el teléfono" width="260" />
+</p>
+
+Las capturas usan una cuenta de demostración con seis meses de datos. Para tenerla en tu copia: `npm run demo:datos` (ver [Cómo ejecutarlo](#-cómo-ejecutarlo)).
 
 ## 📦 Tecnologías
 
-- **Frontend:** React, TypeScript, Vite, React Router, TanStack Query, React Hook Form, Tailwind CSS, Recharts
+- **Frontend:** React, TypeScript, Vite, React Router, TanStack Query, Tailwind CSS (formularios y gráficos hechos a mano, sin librerías)
 - **Backend:** Node.js, Express, Prisma, PostgreSQL
 - **Validación:** Zod (el mismo esquema en frontend y backend)
 - **Pruebas:** Vitest, React Testing Library, Supertest, Playwright (con axe-core para accesibilidad), k6
@@ -25,17 +43,17 @@ Aplicación web full stack de finanzas personales para registrar, organizar y an
 
 ## ✨ Funcionalidades
 
-Las marcadas con 🚧 están en construcción: la API ya está lista y falta la pantalla.
-
-- 🚧 **Crear una cuenta** con una contraseña segura (mínimo 8 caracteres, con mayúscula, minúscula, número y carácter especial).
-- 🚧 **Iniciar y cerrar sesión**, con la sesión guardada en cookies protegidas y límite de intentos.
-- 🚧 **Registrar ingresos y gastos** con descripción, importe, categoría, fecha y notas. El importe siempre es positivo: la app decide si suma o resta según el tipo.
-- 🚧 **Organizar en categorías** propias o predeterminadas. Una categoría con movimientos no se puede eliminar sin reasignarlos antes.
-- 🚧 **Consultar el historial** con filtros por periodo, tipo y categoría, búsqueda por descripción, orden por fecha o importe y paginación.
-- 🚧 **Ver el balance del mes** en un dashboard: ingresos, gastos, evolución de los últimos 6 meses y gastos por categoría.
-- 🚧 **Elegir la moneda principal** (USD, PEN, EUR, MXN o COP).
-- **Elegir el tema claro u oscuro** con un botón. Se recuerda la elección y, si no hay una, se usa la del sistema.
-- **Contraer el menú lateral** para ganar espacio. También se recuerda la elección.
+- **Crear una cuenta** con una contraseña segura (mínimo 8 caracteres, con mayúscula, minúscula, número y carácter especial).
+- **Iniciar y cerrar sesión**, con la sesión guardada en cookies protegidas y límite de intentos.
+- **Registrar ingresos y gastos** con descripción, importe, categoría, fecha y notas. El importe siempre es positivo: la app decide si suma o resta según el tipo.
+- **Editar o eliminar** cualquier movimiento, con confirmación antes de borrar.
+- **Organizar en categorías** propias o predeterminadas. Al eliminar una categoría con movimientos, la app pide a cuál pasarlos.
+- **Consultar el historial** con filtros por periodo, tipo y categoría, búsqueda por descripción, orden por fecha o importe y paginación. Los filtros quedan en la dirección de la página: se pueden guardar o compartir.
+- **Ver el balance del mes** en un dashboard: ingresos, gastos, evolución de los últimos 6 meses, gastos por categoría y últimos movimientos. Se puede navegar a meses anteriores.
+- **Analizar las estadísticas** de los últimos 6 meses: ahorro, tasa de ahorro, gasto promedio, mes con más gastos y detalle mensual.
+- **Elegir la moneda principal** (USD, PEN, EUR, MXN o COP) y cambiar el nombre.
+- **Elegir el tema claro u oscuro.** Se recuerda la elección y, si no hay una, se usa la del sistema.
+- **Usarla en el teléfono**, con barra de navegación inferior y el historial en tarjetas.
 - **Ver pantallas de carga, vacío y error** (incluida la página 404 y el aviso sin conexión).
 
 ## ⌨️ Atajos de teclado
@@ -72,6 +90,9 @@ docs             Arquitectura, modelo de datos, contrato OpenAPI y decisiones t�
 6. Configuré la calidad desde el inicio: ESLint, Prettier, pruebas automatizadas y un CI que corre en cada Pull Request.
 7. Implementé la autenticación: contraseñas con Argon2id, sesión en cookies httpOnly con un token de acceso de 15 minutos y uno de renovación que rota en cada uso, protección CSRF y límite de intentos de inicio de sesión guardado en PostgreSQL.
 8. Construí la API de categorías, movimientos y resúmenes: historial con filtros y paginación estable, reasignación de movimientos en una transacción al eliminar una categoría, y balances calculados en PostgreSQL.
+9. Construí las pantallas una por una (acceso, historial, categorías, dashboard, estadísticas y configuración), cada una con sus pruebas de componentes y revisando el diseño en escritorio, teléfono y tema oscuro.
+10. Agregué pruebas de extremo a extremo con Playwright, que usan la app real en un navegador y analizan la accesibilidad con axe-core. Encontraron errores que las pruebas unitarias no veían.
+11. Preparé la infraestructura de producción: imágenes Docker, Nginx repartiendo la carga entre dos instancias de la API y pruebas de carga con k6, todo verificado en el CI.
 
 ## 📚 Lo que aprendí
 
@@ -82,12 +103,17 @@ docs             Arquitectura, modelo de datos, contrato OpenAPI y decisiones t�
 - A no revelar qué correos están registrados: el inicio de sesión responde igual, y tarda lo mismo, si el correo no existe o si la contraseña es incorrecta.
 - A hacer cuentas de dinero en céntimos con `bigint` (enteros exactos) cuando hay que sumar o restar en el código, y a dejar las sumas grandes a la base de datos.
 - A que un recurso de otro usuario responda 404 y no 403: así la API no confirma que existe.
+- Que las pruebas de extremo a extremo encuentran lo que las demás no ven: un color con poco contraste, un texto que el lector de pantalla anunciaba distinto a como se veía y una pantalla que se desbordaba en el teléfono.
+- A medir antes de afirmar: con k6 comprobé que apagar una instancia de la API no produce errores, porque Nginx reintenta en la otra.
+- Que una imagen Docker puede cargar cientos de megas que no usa: las dependencias de producción de la API bajaron de 347 MB a 102 MB.
 
 ## 💡 Cómo se podría mejorar
 
 - Conectar cuentas bancarias para importar movimientos automáticamente.
 - Varias monedas por usuario con conversión según el tipo de cambio.
 - Presupuestos mensuales por categoría con alertas.
+- Exportar el historial a CSV o Excel.
+- Desplegarla en un servidor con HTTPS y un dominio propio.
 
 ## 🚀 Cómo ejecutarlo
 
@@ -134,7 +160,7 @@ cp .env.example .env   # en PowerShell: Copy-Item .env.example .env; luego compl
 npm run prod:up        # construye y levanta todo
 ```
 
-Abre http://localhost:8080. Detalles, comandos y cómo ver el balanceo en [`docs/infraestructura.md`](docs/infraestructura.md).
+Abre http://localhost:8080. Para tener datos de ejemplo, `npm run demo:datos` crea una cuenta de demostración con seis meses de movimientos (`demo@simplify.app` / `Demo#Simplify2026`). Detalles, comandos y cómo ver el balanceo en [`docs/infraestructura.md`](docs/infraestructura.md).
 
 ### Pruebas
 
@@ -174,10 +200,6 @@ La prueba falla si más del 1 % de las peticiones da error o si el 95 % no respo
 _p95: el 95 % de las peticiones respondió en ese tiempo o menos._
 
 **Tolerancia a fallos:** durante la prueba de carga se apagó una de las dos instancias de la API. Nginx reintentó en la otra las peticiones que había enviado a la instancia caída, y la prueba terminó sin errores.
-
-## 🎥 Video
-
-_Se agregará cuando el proyecto esté terminado._
 
 ## 📄 Derechos
 

@@ -29,6 +29,7 @@
     "load:humo": "docker compose -f docker-compose.prod.yml --profile load run --rm -e PERFIL=humo k6",
     "load:carga": "docker compose -f docker-compose.prod.yml --profile load run --rm -e PERFIL=carga k6",
     "load:estres": "docker compose -f docker-compose.prod.yml --profile load run --rm -e PERFIL=estres k6",
+    "demo:datos": "node infra/demo-seed.mjs",
     "prepare": "husky"
   },
   "lint-staged": {
