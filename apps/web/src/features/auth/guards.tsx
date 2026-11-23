@@ -47,7 +47,7 @@ export function ServiceUnavailable({
           type="button"
           onClick={onRetry}
           disabled={retrying}
-          className="h-12 rounded-full bg-hero px-6 font-semibold text-on-hero disabled:opacity-70"
+          className="h-12 rounded-full bg-hero px-6 hover:bg-hero-hover font-semibold text-on-hero disabled:opacity-70"
         >
           {retrying ? 'Conectando…' : 'Reintentar'}
         </button>

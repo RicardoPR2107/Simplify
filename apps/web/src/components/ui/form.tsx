@@ -114,7 +114,7 @@ export function SubmitButton({ pending, children, pendingLabel }: SubmitButtonPr
       type="submit"
       disabled={pending}
       aria-busy={pending}
-      className="flex h-12 items-center justify-center gap-2 rounded-full bg-hero px-6 font-semibold text-on-hero transition-opacity disabled:opacity-70"
+      className="flex h-12 items-center justify-center gap-2 rounded-full bg-hero px-6 hover:bg-hero-hover font-semibold text-on-hero disabled:opacity-70"
     >
       {pending && (
         <span

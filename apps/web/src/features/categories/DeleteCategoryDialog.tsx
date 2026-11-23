@@ -95,7 +95,7 @@ export function DeleteCategoryDialog({
             type="button"
             onClick={confirm}
             disabled={remove.isPending || (inUse && destinations.length === 0)}
-            className="h-12 rounded-full bg-expense px-6 font-semibold text-white disabled:opacity-50"
+            className="h-12 rounded-full bg-danger px-6 font-semibold text-white hover:bg-danger-hover disabled:opacity-50"
           >
             {remove.isPending ? 'Eliminando…' : inUse ? 'Mover y eliminar' : 'Eliminar'}
           </button>
