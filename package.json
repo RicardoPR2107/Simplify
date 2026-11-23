@@ -22,6 +22,13 @@
     "test:e2e": "npm run test:e2e -w @simplify/e2e",
     "db:up": "docker compose up -d db db_test",
     "db:down": "docker compose down",
+    "prod:up": "docker compose -f docker-compose.prod.yml up -d --build",
+    "prod:ps": "docker compose -f docker-compose.prod.yml ps",
+    "prod:logs": "docker compose -f docker-compose.prod.yml logs -f nginx api1 api2",
+    "prod:down": "docker compose -f docker-compose.prod.yml down",
+    "load:humo": "docker compose -f docker-compose.prod.yml --profile load run --rm -e PERFIL=humo k6",
+    "load:carga": "docker compose -f docker-compose.prod.yml --profile load run --rm -e PERFIL=carga k6",
+    "load:estres": "docker compose -f docker-compose.prod.yml --profile load run --rm -e PERFIL=estres k6",
     "prepare": "husky"
   },
   "lint-staged": {

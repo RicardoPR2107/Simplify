@@ -1,0 +1,116 @@
+# Simplify en modo producción, todo en tu máquina:
+#
+#   navegador ──► Nginx :8080 ──┬──► api1 ──┐
+#                (web + balanceo)└──► api2 ──┴──► PostgreSQL
+#
+# Uso (desde la raíz del repositorio, con el archivo .env creado; ver docs/infraestructura.md):
+#   docker compose -f docker-compose.prod.yml up -d --build
+#   docker compose -f docker-compose.prod.yml --profile load run --rm k6
+#   docker compose -f docker-compose.prod.yml down
+
+name: simplify-prod
+
+# Configuración común a las dos instancias de la API (ancla YAML: se escribe una vez).
+x-api: &api
+  build:
+    context: .
+    dockerfile: apps/api/Dockerfile
+    target: runtime
+  image: simplify-api:local
+  restart: unless-stopped
+  environment:
+    NODE_ENV: production
+    PORT: '4000'
+    LOG_LEVEL: info
+    DATABASE_URL: postgresql://simplify:${POSTGRES_PASSWORD:?Falta POSTGRES_PASSWORD en .env}@db:5432/simplify
+    CORS_ORIGIN: http://localhost:8080
+    JWT_SECRET: ${JWT_SECRET:?Falta JWT_SECRET en .env}
+  depends_on:
+    migrate:
+      condition: service_completed_successfully
+  # Endurecimiento: sistema de archivos de solo lectura y sin escalar privilegios.
+  read_only: true
+  tmpfs:
+    - /tmp
+  security_opt:
+    - no-new-privileges:true
+  deploy:
+    resources:
+      limits:
+        cpus: '1'
+        memory: 512M
+  networks: [backend]
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: simplify
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Falta POSTGRES_PASSWORD en .env}
+      POSTGRES_DB: simplify
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U simplify -d simplify']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    # Sin "ports": la base de datos no es accesible desde fuera de Docker, solo desde la API.
+    networks: [backend]
+
+  # Aplica las migraciones pendientes y termina. Las APIs esperan a que acabe bien.
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: migrate
+    image: simplify-migrate:local
+    environment:
+      DATABASE_URL: postgresql://simplify:${POSTGRES_PASSWORD:?Falta POSTGRES_PASSWORD en .env}@db:5432/simplify
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: 'no'
+    networks: [backend]
+
+  api1:
+    <<: *api
+
+  api2:
+    <<: *api
+
+  nginx:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    image: simplify-web:local
+    restart: unless-stopped
+    ports:
+      - '8080:80'
+    depends_on:
+      api1:
+        condition: service_healthy
+      api2:
+        condition: service_healthy
+    networks: [backend]
+
+  # Pruebas de carga. Solo se ejecuta a pedido: --profile load run --rm k6
+  k6:
+    image: grafana/k6:1.4.2
+    profiles: [load]
+    environment:
+      BASE_URL: http://nginx
+    volumes:
+      - ./load-tests:/scripts:ro
+    command: run /scripts/load.js
+    depends_on:
+      nginx:
+        condition: service_healthy
+    networks: [backend]
+
+volumes:
+  db-data:
+
+networks:
+  backend:

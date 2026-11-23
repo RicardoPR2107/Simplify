@@ -1,0 +1,20 @@
+# Solo se envía a Docker lo necesario para construir: nada de dependencias locales,
+# compilados, secretos ni historial de git.
+**/node_modules
+**/dist
+**/coverage
+**/*.log
+**/*.tsbuildinfo
+apps/api/src/generated
+apps/e2e/test-results
+apps/e2e/playwright-report
+**/.env
+**/.env.*
+!**/.env.example
+.git
+.github
+.husky
+.vscode
+.idea
+docs
+load-tests

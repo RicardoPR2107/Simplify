@@ -9,7 +9,12 @@ import { defineConfig, devices } from '@playwright/test';
  */
 const API_PORT = 4100;
 const WEB_PORT = 5174;
-const WEB_URL = `http://localhost:${WEB_PORT}`;
+/**
+ * E2E_BASE_URL permite probar una app ya levantada (por ejemplo, el stack de producción en
+ * Docker: http://localhost:8080). En ese caso no se arranca ningún servidor ni se toca la base.
+ */
+const EXTERNAL_URL = process.env.E2E_BASE_URL;
+const WEB_URL = EXTERNAL_URL ?? `http://localhost:${WEB_PORT}`;
 const E2E_DATABASE_URL =
   process.env.E2E_DATABASE_URL ??
   (process.env.CI
@@ -45,34 +50,36 @@ export default defineConfig({
     { name: 'escritorio', use: { ...devices['Desktop Chrome'] }, grepInvert: /@movil/ },
     { name: 'movil', use: { ...devices['Pixel 7'] }, grep: /@movil/ },
   ],
-  webServer: [
-    {
-      name: 'API',
-      cwd: '../api',
-      // Primero deja la base de E2E limpia y con las migraciones; después arranca la API.
-      command:
-        'node --import tsx ../e2e/prepare-db.ts && node --import tsx --conditions=development src/server.ts',
-      url: `http://localhost:${API_PORT}/api/v1/health/ready`,
-      reuseExistingServer: !process.env.CI,
-      timeout: 120_000,
-      env: {
-        NODE_ENV: 'test',
-        PORT: String(API_PORT),
-        LOG_LEVEL: 'warn',
-        DATABASE_URL: E2E_DATABASE_URL,
-        E2E_DATABASE_URL,
-        CORS_ORIGIN: WEB_URL,
-        JWT_SECRET: 'clave-solo-para-pruebas-e2e-de-al-menos-32-caracteres',
-      },
-    },
-    {
-      name: 'Web',
-      cwd: '../web',
-      command: `npx vite --port ${WEB_PORT} --strictPort`,
-      url: WEB_URL,
-      reuseExistingServer: !process.env.CI,
-      timeout: 120_000,
-      env: { API_PROXY_TARGET: `http://localhost:${API_PORT}` },
-    },
-  ],
+  webServer: EXTERNAL_URL
+    ? []
+    : [
+        {
+          name: 'API',
+          cwd: '../api',
+          // Primero deja la base de E2E limpia y con las migraciones; después arranca la API.
+          command:
+            'node --import tsx ../e2e/prepare-db.ts && node --import tsx --conditions=development src/server.ts',
+          url: `http://localhost:${API_PORT}/api/v1/health/ready`,
+          reuseExistingServer: !process.env.CI,
+          timeout: 120_000,
+          env: {
+            NODE_ENV: 'test',
+            PORT: String(API_PORT),
+            LOG_LEVEL: 'warn',
+            DATABASE_URL: E2E_DATABASE_URL,
+            E2E_DATABASE_URL,
+            CORS_ORIGIN: WEB_URL,
+            JWT_SECRET: 'clave-solo-para-pruebas-e2e-de-al-menos-32-caracteres',
+          },
+        },
+        {
+          name: 'Web',
+          cwd: '../web',
+          command: `npx vite --port ${WEB_PORT} --strictPort`,
+          url: WEB_URL,
+          reuseExistingServer: !process.env.CI,
+          timeout: 120_000,
+          env: { API_PROXY_TARGET: `http://localhost:${API_PORT}` },
+        },
+      ],
 });
