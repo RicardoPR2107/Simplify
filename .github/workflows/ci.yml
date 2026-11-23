@@ -65,6 +65,95 @@ jobs:
       - name: Build
         run: npm run build
 
+  e2e:
+    name: Pruebas E2E (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: simplify
+          POSTGRES_PASSWORD: simplify_test
+          POSTGRES_DB: simplify_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U simplify -d simplify_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Compilar el paquete compartido
+        run: npm run build -w @simplify/shared
+
+      - name: Instalar Chromium para Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Pruebas E2E
+        run: npm run test:e2e
+
+      - name: Guardar el reporte si algo falla
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-playwright
+          path: |
+            apps/e2e/playwright-report/
+            apps/e2e/test-results/
+          retention-days: 7
+
+  stack:
+    name: Stack de producción (Docker + k6)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Crear .env con claves de un solo uso
+        run: |
+          echo "POSTGRES_PASSWORD=$(openssl rand -hex 24)" >> .env
+          echo "JWT_SECRET=$(openssl rand -hex 32)" >> .env
+
+      - name: Construir imágenes y levantar el stack
+        run: docker compose -f docker-compose.prod.yml up -d --build
+
+      - name: Esperar a que Nginx y las APIs estén listas
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:8080/api/v1/health/ready > /dev/null; then
+              echo "Stack listo"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "El stack no respondió a tiempo"
+          exit 1
+
+      - name: Prueba de carga (perfil humo)
+        run: docker compose -f docker-compose.prod.yml --profile load run --rm -e PERFIL=humo k6
+
+      - name: Mostrar logs si algo falla
+        if: failure()
+        run: docker compose -f docker-compose.prod.yml logs --no-color
+
+      - name: Apagar y borrar datos
+        if: always()
+        run: docker compose -f docker-compose.prod.yml down -v
+
   audit:
     name: Dependencias vulnerables
     runs-on: ubuntu-latest

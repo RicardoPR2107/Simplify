@@ -28,6 +28,22 @@ export default tseslint.config(
     languageOptions: { globals: globals.node },
   },
   {
+    // Scripts de infraestructura que se ejecutan con Node (por ejemplo, dentro de Docker).
+    files: ['infra/**/*.mjs'],
+    languageOptions: { globals: globals.node },
+    rules: { 'no-console': 'off' },
+  },
+  {
+    // Archivos que el navegador carga tal cual, sin pasar por Vite.
+    files: ['apps/web/public/**/*.js'],
+    languageOptions: { globals: globals.browser },
+  },
+  {
+    // Pruebas de carga: k6 define sus propias variables globales.
+    files: ['load-tests/**/*.js'],
+    languageOptions: { globals: { __ENV: 'readonly', __VU: 'readonly', __ITER: 'readonly' } },
+  },
+  {
     files: ['apps/web/**/*.{ts,tsx}'],
     languageOptions: { globals: globals.browser },
     plugins: { 'react-hooks': reactHooks },

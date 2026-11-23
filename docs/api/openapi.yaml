@@ -3,16 +3,19 @@ info:
   title: Simplify API
   version: 0.1.0
   description: |
-    API REST de Simplify. Contrato inicial (Fase 0): los endpoints marcados como
-    "planificado" se implementan en las Fases 1 y 2.
+    API REST de Simplify.
 
     - Autenticación: cookies httpOnly (ver docs/adr/0002). Las rutas protegidas
       responden 401 sin sesión válida.
+    - CSRF: todo POST, PATCH y DELETE debe enviar la cabecera `X-CSRF-Token` con el valor
+      de la cookie `simplify_csrf` (se obtiene con GET /auth/csrf); si falta, responde 403.
     - Importes: siempre texto con hasta 2 decimales, por ejemplo "85.50" (docs/adr/0003).
     - Fechas: texto AAAA-MM-DD.
     - Aislamiento: un usuario solo ve sus propios datos; un id ajeno responde 404.
 servers:
   - url: /api/v1
+security:
+  - cookieAuth: []
 tags:
   - name: health
   - name: auth
@@ -24,6 +27,7 @@ tags:
 paths:
   /health/live:
     get:
+      security: []
       tags: [health]
       summary: El proceso está vivo
       responses:
@@ -31,6 +35,7 @@ paths:
           description: OK
   /health/ready:
     get:
+      security: []
       tags: [health]
       summary: La instancia puede atender tráfico (la usa el balanceador)
       responses:
@@ -41,65 +46,159 @@ paths:
 
   /auth/register:
     post:
+      security: []
       tags: [auth]
-      summary: Crear cuenta (RF-01) — planificado
+      summary: Crear cuenta (RF-01)
+      description: |
+        Crea la cuenta con la contraseña cifrada con Argon2id y las 11 categorías
+        predeterminadas, en una sola transacción, e inicia la sesión (cookies).
+        El correo se guarda en minúsculas. Los campos extra del cuerpo (por ejemplo
+        `id` o `currency`) se ignoran.
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
       requestBody:
         required: true
         content:
           application/json:
             schema: { $ref: '#/components/schemas/RegisterInput' }
       responses:
-        '201': { description: Cuenta creada e iniciada la sesión }
+        '201':
+          description: Cuenta creada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/User' }
         '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/CsrfError' }
         '409': { $ref: '#/components/responses/Conflict' }
+  /auth/csrf:
+    get:
+      security: []
+      tags: [auth]
+      summary: Obtener el token CSRF
+      description: |
+        Guarda el token en la cookie `simplify_csrf` (legible por JavaScript) y lo devuelve.
+        El frontend debe enviarlo en la cabecera `X-CSRF-Token` en todo POST, PATCH y DELETE.
+        Si el navegador ya tiene un token válido, se conserva.
+      responses:
+        '200':
+          description: Token CSRF
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  csrfToken: { type: string }
   /auth/login:
     post:
+      security: []
       tags: [auth]
-      summary: Iniciar sesión (RF-02) — planificado
+      summary: Iniciar sesión (RF-02)
+      description: |
+        Responde igual si el correo no existe o si la contraseña es incorrecta.
+        Tras 5 fallos en 15 minutos para un correo (o 20 desde una IP) responde 429
+        con la cabecera `Retry-After`, aunque la contraseña sea correcta.
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
       requestBody:
         required: true
         content:
           application/json:
             schema: { $ref: '#/components/schemas/LoginInput' }
       responses:
-        '200': { description: Sesión iniciada; se envían las cookies }
+        '200':
+          description: Sesión iniciada; se envían las cookies `simplify_at` y `simplify_rt`
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/User' }
+        '400': { $ref: '#/components/responses/ValidationError' }
         '401': { $ref: '#/components/responses/Error' }
-        '429': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/CsrfError' }
+        '429':
+          description: Demasiados intentos
+          headers:
+            Retry-After:
+              description: Segundos que faltan para poder reintentar
+              schema: { type: integer }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
   /auth/refresh:
     post:
+      security: []
       tags: [auth]
-      summary: Renovar el token de acceso — planificado
+      summary: Renovar la sesión
+      description: |
+        Usa la cookie `simplify_rt` y la rota: el token anterior deja de servir.
+        Si llega un token ya usado (posible robo), se cierran todas las sesiones del usuario.
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
       responses:
         '204': { description: Cookies renovadas }
         '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/CsrfError' }
   /auth/logout:
     post:
+      security: []
       tags: [auth]
-      summary: Cerrar sesión (RF-03) — planificado
+      summary: Cerrar sesión (RF-03)
+      description: Revoca el token de renovación y borra las cookies. Responde 204 aunque no haya sesión.
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
       responses:
         '204': { description: Sesión cerrada }
+        '403': { $ref: '#/components/responses/CsrfError' }
 
   /me:
     get:
       tags: [profile]
-      summary: Perfil del usuario (RF-04) — planificado
+      summary: Perfil del usuario (RF-04)
       responses:
         '200':
           description: OK
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/User' }
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/User' }
+        '401': { $ref: '#/components/responses/Error' }
     patch:
       tags: [profile]
-      summary: Cambiar nombre o moneda (RF-04, RF-18) — planificado
+      summary: Cambiar nombre o moneda (RF-04, RF-18)
+      description: |
+        Solo acepta `name` y `currency`; cualquier otro campo se ignora.
+        Cambiar la moneda no convierte los importes ya registrados.
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateProfileInput' }
       responses:
-        '200': { description: Perfil actualizado }
+        '200':
+          description: Perfil actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/User' }
         '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/CsrfError' }
 
   /categories:
     get:
       tags: [categories]
-      summary: Listar categorías (RF-10) — planificado
+      summary: Listar categorías (RF-10)
+      description: Incluye cuántos movimientos usa cada una. Orden por tipo y nombre.
       parameters:
         - { name: type, in: query, schema: { $ref: '#/components/schemas/MovementType' } }
       responses:
@@ -108,37 +207,95 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items: { $ref: '#/components/schemas/Category' }
+                type: object
+                properties:
+                  categories:
+                    type: array
+                    items: { $ref: '#/components/schemas/Category' }
+        '401': { $ref: '#/components/responses/Error' }
     post:
       tags: [categories]
-      summary: Crear categoría (RF-10) — planificado
+      summary: Crear categoría (RF-10)
+      description: El nombre no se puede repetir dentro del mismo tipo (sin distinguir mayúsculas).
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CategoryInput' }
       responses:
-        '201': { description: Creada }
+        '201':
+          description: Creada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  category: { $ref: '#/components/schemas/Category' }
+        '400': { $ref: '#/components/responses/ValidationError' }
         '409': { $ref: '#/components/responses/Conflict' }
   /categories/{id}:
     parameters:
       - $ref: '#/components/parameters/Id'
     patch:
       tags: [categories]
-      summary: Renombrar categoría — planificado
+      summary: Renombrar categoría
+      description: Solo se cambia el nombre; el tipo es fijo.
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, minLength: 2, maxLength: 40 }
       responses:
-        '200': { description: Actualizada }
+        '200':
+          description: Actualizada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  category: { $ref: '#/components/schemas/Category' }
+        '400': { $ref: '#/components/responses/ValidationError' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
     delete:
       tags: [categories]
-      summary: Eliminar categoría (RN-09) — planificado
-      description: Si tiene movimientos, exige `reassignTo` y los mueve en una transacción.
+      summary: Eliminar categoría (RN-09)
+      description: |
+        Si tiene movimientos, exige `reassignTo` (otra categoría propia del mismo tipo) y los
+        mueve en la misma transacción antes de eliminarla.
       parameters:
+        - $ref: '#/components/parameters/CsrfToken'
         - { name: reassignTo, in: query, schema: { type: string, format: uuid } }
       responses:
         '204': { description: Eliminada }
-        '409': { $ref: '#/components/responses/Conflict' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: 'La categoría tiene movimientos y no se indicó `reassignTo`'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422':
+          description: La categoría de destino es de otro tipo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 
   /movements:
     get:
       tags: [movements]
-      summary: Historial paginado y filtrable (RF-07, RF-11, RF-12, RF-13) — planificado
+      summary: Historial paginado y filtrable (RF-07, RF-11, RF-12, RF-13)
+      description: |
+        `from` y `to` incluyen ambos días. `q` busca en la descripción sin distinguir
+        mayúsculas. El orden es estable entre páginas aunque varios movimientos compartan fecha.
       parameters:
         - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
         - {
@@ -159,9 +316,13 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/MovementPage' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Error' }
     post:
       tags: [movements]
-      summary: Registrar ingreso o gasto (RF-05, RF-06) — planificado
+      summary: Registrar ingreso o gasto (RF-05, RF-06)
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
       requestBody:
         required: true
         content:
@@ -172,27 +333,68 @@ paths:
           description: Creado
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Movement' }
+              schema:
+                type: object
+                properties:
+                  movement: { $ref: '#/components/schemas/Movement' }
         '400': { $ref: '#/components/responses/ValidationError' }
-        '422': { $ref: '#/components/responses/Error' }
+        '422':
+          description: La categoría no corresponde al tipo del movimiento
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
   /movements/{id}:
     parameters:
       - $ref: '#/components/parameters/Id'
     get:
       tags: [movements]
-      summary: Consultar un movimiento — planificado
+      summary: Consultar un movimiento
       responses:
-        '200': { description: OK }
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  movement: { $ref: '#/components/schemas/Movement' }
         '404': { $ref: '#/components/responses/NotFound' }
     patch:
       tags: [movements]
-      summary: Editar movimiento (RF-08) — planificado
+      summary: Editar movimiento (RF-08)
+      description: Edición parcial. Se valida la combinación final de tipo y categoría.
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/MovementInput'
+              required: []
+              minProperties: 1
       responses:
-        '200': { description: Actualizado }
+        '200':
+          description: Actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  movement: { $ref: '#/components/schemas/Movement' }
+        '400': { $ref: '#/components/responses/ValidationError' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: La categoría no corresponde al tipo del movimiento
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
     delete:
       tags: [movements]
-      summary: Eliminar movimiento (RF-09) — planificado
+      summary: Eliminar movimiento (RF-09)
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
       responses:
         '204': { description: Eliminado }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -200,7 +402,55 @@ paths:
   /summary/month:
     get:
       tags: [summary]
-      summary: Ingresos, gastos y balance del mes (RF-14, RF-15, RF-17) — planificado
+      summary: Ingresos, gastos y balance del mes (RF-14, RF-15, RF-17)
+      parameters:
+        - $ref: '#/components/parameters/Year'
+        - $ref: '#/components/parameters/Month'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MonthSummary' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+  /summary/categories:
+    get:
+      tags: [summary]
+      summary: Totales del mes agrupados por categoría
+      description: De mayor a menor, con el porcentaje de cada categoría sobre el total del tipo.
+      parameters:
+        - $ref: '#/components/parameters/Year'
+        - $ref: '#/components/parameters/Month'
+        - {
+            name: type,
+            in: query,
+            schema: { $ref: '#/components/schemas/MovementType', default: EXPENSE },
+          }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type: { $ref: '#/components/schemas/MovementType' }
+                  total: { $ref: '#/components/schemas/Amount' }
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        categoryId: { type: string, format: uuid }
+                        name: { type: string }
+                        total: { $ref: '#/components/schemas/Amount' }
+                        percentage: { type: number, example: 33.3 }
+        '400': { $ref: '#/components/responses/ValidationError' }
+  /summary/evolution:
+    get:
+      tags: [summary]
+      summary: Ingresos, gastos y balance de los 6 meses que terminan en el indicado (RF-16)
+      description: Siempre devuelve 6 meses en orden cronológico; los meses sin movimientos van en cero.
       parameters:
         - $ref: '#/components/parameters/Year'
         - $ref: '#/components/parameters/Month'
@@ -212,26 +462,18 @@ paths:
               schema:
                 type: object
                 properties:
-                  income: { $ref: '#/components/schemas/Amount' }
-                  expense: { $ref: '#/components/schemas/Amount' }
-                  balance: { type: string, example: '1050.00', description: 'Puede ser negativo.' }
-  /summary/categories:
-    get:
-      tags: [summary]
-      summary: Gastos agrupados por categoría — planificado
-      parameters:
-        - $ref: '#/components/parameters/Year'
-        - $ref: '#/components/parameters/Month'
-      responses:
-        '200': { description: OK }
-  /summary/evolution:
-    get:
-      tags: [summary]
-      summary: Ingresos y gastos de los últimos 6 meses (RF-16) — planificado
-      responses:
-        '200': { description: OK }
+                  months:
+                    type: array
+                    items: { $ref: '#/components/schemas/MonthSummary' }
+        '400': { $ref: '#/components/responses/ValidationError' }
 
 components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: simplify_at
+      description: Token de acceso (JWT de 15 minutos) en cookie httpOnly.
   parameters:
     Id:
       name: id
@@ -248,8 +490,19 @@ components:
       in: query
       required: true
       schema: { type: integer, minimum: 1, maximum: 12 }
+    CsrfToken:
+      name: X-CSRF-Token
+      in: header
+      required: true
+      description: Valor de la cookie `simplify_csrf`
+      schema: { type: string }
 
   responses:
+    CsrfError:
+      description: Falta el token CSRF o no coincide con la cookie
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
     Error:
       description: Error con código
       content:
@@ -317,13 +570,23 @@ components:
       properties:
         name: { type: string, minLength: 2, maxLength: 60 }
         email: { type: string, format: email }
-        password: { type: string, minLength: 10, maxLength: 128 }
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+          description: Debe incluir minúscula, mayúscula, número y carácter especial.
     LoginInput:
       type: object
       required: [email, password]
       properties:
         email: { type: string, format: email }
         password: { type: string }
+    UpdateProfileInput:
+      type: object
+      minProperties: 1
+      properties:
+        name: { type: string, minLength: 2, maxLength: 60 }
+        currency: { type: string, enum: [USD, PEN, EUR, MXN, COP] }
     User:
       type: object
       properties:
@@ -331,6 +594,12 @@ components:
         name: { type: string }
         email: { type: string, format: email }
         currency: { type: string, enum: [USD, PEN, EUR, MXN, COP] }
+    CategoryInput:
+      type: object
+      required: [name, type]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 40 }
+        type: { $ref: '#/components/schemas/MovementType' }
     Category:
       type: object
       properties:
@@ -338,6 +607,7 @@ components:
         name: { type: string }
         type: { $ref: '#/components/schemas/MovementType' }
         isDefault: { type: boolean }
+        movementCount: { type: integer }
     MovementInput:
       type: object
       required: [type, description, amount, categoryId, date]
@@ -349,12 +619,33 @@ components:
         date: { type: string, format: date }
         notes: { type: string, maxLength: 500 }
     Movement:
-      allOf:
-        - $ref: '#/components/schemas/MovementInput'
-        - type: object
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        type: { $ref: '#/components/schemas/MovementType' }
+        description: { type: string }
+        amount: { $ref: '#/components/schemas/Amount' }
+        date: { type: string, format: date }
+        notes: { type: [string, 'null'] }
+        category:
+          type: object
           properties:
             id: { type: string, format: uuid }
-            category: { $ref: '#/components/schemas/Category' }
+            name: { type: string }
+            type: { $ref: '#/components/schemas/MovementType' }
+    MonthSummary:
+      type: object
+      properties:
+        year: { type: integer }
+        month: { type: integer }
+        income: { $ref: '#/components/schemas/Amount' }
+        expense: { $ref: '#/components/schemas/Amount' }
+        balance:
+          {
+            type: string,
+            example: '-150.50',
+            description: 'Ingresos − gastos; puede ser negativo.',
+          }
     MovementPage:
       type: object
       properties:

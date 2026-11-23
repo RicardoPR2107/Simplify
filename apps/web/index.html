@@ -16,15 +16,7 @@
       rel="stylesheet"
     />
     <title>Simplify</title>
-    <script>
-      // Aplica el tema guardado antes de pintar, para evitar un parpadeo claro → oscuro.
-      try {
-        const saved = localStorage.getItem('simplify-theme');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (saved === 'dark' || (!saved && prefersDark))
-          document.documentElement.classList.add('dark');
-      } catch {}
-    </script>
+    <script src="/theme-init.js"></script>
   </head>
   <body>
     <div id="root"></div>

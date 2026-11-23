@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { amountSchema } from '../money.js';
-import { movementTypeSchema } from './category.js';
+import { movementTypeSchema, type MovementType } from './category.js';
 
 /** RN-08: fecha de calendario válida en formato AAAA-MM-DD (sin hora ni zona horaria). */
 export const isoDateSchema = z
@@ -57,3 +57,24 @@ export const periodQuerySchema = z.object({
   month: z.coerce.number().int().min(1).max(12),
 });
 export type PeriodQuery = z.infer<typeof periodQuerySchema>;
+
+/** Lo que la API devuelve de un movimiento. */
+export interface MovementView {
+  id: string;
+  type: MovementType;
+  description: string;
+  /** Texto con 2 decimales, por ejemplo "85.50" (docs/adr/0003). */
+  amount: string;
+  /** AAAA-MM-DD */
+  date: string;
+  notes: string | null;
+  category: { id: string; name: string; type: MovementType };
+}
+
+export interface MovementPage {
+  items: MovementView[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}

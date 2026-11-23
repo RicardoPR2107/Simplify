@@ -1,5 +1,5 @@
 # Bases de datos para desarrollo y pruebas.
-# Fase 6 añadirá docker-compose.prod.yml con Nginx + 2 instancias de la API.
+# El modo producción (Nginx + 2 instancias de la API) está en docker-compose.prod.yml.
 services:
   db:
     image: postgres:17-alpine

@@ -7,8 +7,12 @@ export default defineConfig({
   server: {
     port: 5173,
     // En desarrollo, /api se redirige a la API: mismo origen, así las cookies funcionan sin trucos.
+    // API_PROXY_TARGET permite apuntar a otra API (las pruebas E2E usan una en el puerto 4100).
     proxy: {
-      '/api': { target: 'http://localhost:4000', changeOrigin: true },
+      '/api': {
+        target: process.env.API_PROXY_TARGET ?? 'http://localhost:4000',
+        changeOrigin: true,
+      },
     },
   },
   build: {
@@ -26,5 +30,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: false,
+    // La primera prueba de cada archivo compila la página perezosa desde cero: en equipos lentos
+    // o en un CI cargado puede tardar varios segundos. 15 s por prueba deja margen de sobra.
+    testTimeout: 15_000,
   },
 });
