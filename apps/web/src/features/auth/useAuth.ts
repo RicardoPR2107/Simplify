@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { LoginInput, RegisterInput, UserProfile } from '@simplify/shared';
+import type { LoginInput, RegisterInput, UpdateProfileInput, UserProfile } from '@simplify/shared';
 import { api, ApiError } from '../../lib/api';
 
 export const ME_QUERY_KEY = ['me'] as const;
@@ -45,5 +45,14 @@ export function useLogout() {
       queryClient.clear();
       queryClient.setQueryData(ME_QUERY_KEY, null);
     },
+  });
+}
+
+/** RF-04 y RF-18: cambia nombre o moneda. La moneda nueva se aplica al instante en toda la app. */
+export function useUpdateProfile() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: UpdateProfileInput) => api.patch<{ user: UserProfile }>('/me', input),
+    onSuccess: ({ user }) => queryClient.setQueryData(ME_QUERY_KEY, user),
   });
 }

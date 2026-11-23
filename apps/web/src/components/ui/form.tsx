@@ -48,7 +48,7 @@ export function TextField({
           id={inputId}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy || undefined}
-          className={`h-12 w-full rounded-xl border bg-card px-4 text-ink outline-none transition-colors placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-ring/30 ${
+          className={`h-12 w-full rounded-xl border bg-card px-4 text-ink outline-none transition-colors placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-ring/30 disabled:cursor-not-allowed disabled:bg-faint disabled:text-muted ${
             error ? 'border-expense' : 'border-line'
           } ${trailing ? 'pr-12' : ''}`}
           {...props}
