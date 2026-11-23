@@ -1,4 +1,5 @@
 import type { Currency, MonthSummary } from '@simplify/shared';
+import { useId } from 'react';
 import { formatMoney } from '../../lib/format';
 
 /**
@@ -37,9 +38,13 @@ export function SummaryCards({ summary, currency }: { summary: MonthSummary; cur
 }
 
 function Tile({ label, value, dot }: { label: string; value: string; dot: string }) {
+  const headingId = useId();
   return (
-    <section className="flex flex-col justify-between gap-4 rounded-card border border-line bg-card p-5 md:gap-6 md:p-6">
-      <h2 className="flex items-center gap-2 text-sm font-medium text-muted">
+    <section
+      aria-labelledby={headingId}
+      className="flex flex-col justify-between gap-4 rounded-card border border-line bg-card p-5 md:gap-6 md:p-6"
+    >
+      <h2 id={headingId} className="flex items-center gap-2 text-sm font-medium text-muted">
         <span aria-hidden="true" className={`size-2.5 rounded-full ${dot}`} />
         {label}
       </h2>

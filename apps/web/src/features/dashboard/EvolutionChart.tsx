@@ -103,12 +103,15 @@ export function EvolutionChart({
                 onBlur={() => setActive(null)}
                 onMouseEnter={() => setActive(index)}
                 onMouseLeave={() => setActive(null)}
-                aria-label={`${periodLabel(month)}: ingresos ${formatMoney(month.income, currency)}, gastos ${formatMoney(month.expense, currency)}, balance ${formatMoney(month.balance, currency)}`}
-                className={`rounded-md py-1 text-center text-xs ${
+                className={`relative rounded-md py-1 text-center text-xs ${
                   active === index ? 'font-semibold text-ink' : 'text-muted'
                 }`}
               >
+                {/* El nombre accesible empieza por el texto visible (WCAG 2.5.3) y suma el detalle. */}
                 {periodLabel(month, 'short')}
+                <span className="sr-only">
+                  {` ${month.year}: ingresos ${formatMoney(month.income, currency)}, gastos ${formatMoney(month.expense, currency)}, balance ${formatMoney(month.balance, currency)}`}
+                </span>
               </button>
             ))}
           </div>
