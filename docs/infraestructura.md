@@ -87,12 +87,13 @@ Necesitas Docker Desktop.
 
 3. Abre http://localhost:8080.
 
-| Comando             | Qué hace                                          |
-| ------------------- | ------------------------------------------------- |
-| `npm run prod:up`   | Construye las imágenes y levanta el stack         |
-| `npm run prod:ps`   | Estado y salud de cada contenedor                 |
-| `npm run prod:logs` | Logs de Nginx y de las dos APIs en vivo           |
-| `npm run prod:down` | Apaga todo (los datos se conservan en un volumen) |
+| Comando              | Qué hace                                                |
+| -------------------- | ------------------------------------------------------- |
+| `npm run prod:up`    | Construye las imágenes y levanta el stack               |
+| `npm run prod:ps`    | Estado y salud de cada contenedor                       |
+| `npm run prod:logs`  | Logs de Nginx y de las dos APIs en vivo                 |
+| `npm run prod:down`  | Apaga todo (los datos se conservan en un volumen)       |
+| `npm run demo:datos` | Crea una cuenta de demostración con seis meses de datos |
 
 > Las cookies de sesión son `Secure` (solo viajan por HTTPS). Los navegadores hacen una excepción con `localhost`, por eso funciona en http://localhost:8080 pero no desde otra máquina por su IP. En un servidor real, Nginx se configuraría con un certificado HTTPS.
 

@@ -47,13 +47,13 @@ export function MovementFiltersBar({
   return (
     <section
       aria-label="Filtros"
-      className="flex flex-col gap-4 rounded-card border border-line bg-card p-4 md:p-5"
+      className="@container flex flex-col gap-4 rounded-card border border-line bg-card p-4 md:p-5"
     >
       <div className="flex items-end gap-3">
         <TextField
           label="Buscar"
           type="search"
-          placeholder="Buscar por descripción"
+          placeholder="Ej.: alquiler"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           maxLength={60}
@@ -73,7 +73,7 @@ export function MovementFiltersBar({
       </div>
       <div
         id="filtros-avanzados"
-        className={`${open ? 'grid' : 'hidden'} gap-4 sm:grid-cols-2 md:grid lg:grid-cols-[1.4fr_1fr_1fr_1fr_1fr]`}
+        className={`${open ? 'grid' : 'hidden'} gap-4 @lg:grid-cols-2 @3xl:grid-cols-3 @5xl:grid-cols-[1.4fr_1fr_1fr_1fr_1fr] md:grid`}
       >
         <Segmented
           legend="Tipo"
@@ -96,32 +96,38 @@ export function MovementFiltersBar({
             </option>
           ))}
         </SelectField>
-        <TextField
-          label="Desde"
-          type="date"
-          value={filters.from ?? ''}
-          max={filters.to}
-          onChange={(event) => update({ from: event.target.value || undefined })}
-        />
-        <TextField
-          label="Hasta"
-          type="date"
-          value={filters.to ?? ''}
-          min={filters.from}
-          onChange={(event) => update({ to: event.target.value || undefined })}
-        />
-        <SelectField
-          label="Ordenar por"
-          value={sortValue}
-          onChange={(event) =>
-            update({ sort: event.target.value === 'date-desc' ? undefined : event.target.value })
-          }
-        >
-          <option value="date-desc">Más recientes</option>
-          <option value="date-asc">Más antiguos</option>
-          <option value="amount-desc">Mayor importe</option>
-          <option value="amount-asc">Menor importe</option>
-        </SelectField>
+        {/* Sin huecos en ningún ancho: en 2 columnas el orden ocupa la fila entera y las fechas van
+            siempre juntas. El orden visual sigue al del código, así coincide con el de la tecla Tab. */}
+        <div className="@lg:col-span-2 @3xl:col-span-1">
+          <SelectField
+            label="Ordenar por"
+            value={sortValue}
+            onChange={(event) =>
+              update({ sort: event.target.value === 'date-desc' ? undefined : event.target.value })
+            }
+          >
+            <option value="date-desc">Más recientes</option>
+            <option value="date-asc">Más antiguos</option>
+            <option value="amount-desc">Mayor importe</option>
+            <option value="amount-asc">Menor importe</option>
+          </SelectField>
+        </div>
+        <div className="grid grid-cols-2 gap-4 @lg:col-span-2 @3xl:col-span-3 @5xl:contents">
+          <TextField
+            label="Desde"
+            type="date"
+            value={filters.from ?? ''}
+            max={filters.to}
+            onChange={(event) => update({ from: event.target.value || undefined })}
+          />
+          <TextField
+            label="Hasta"
+            type="date"
+            value={filters.to ?? ''}
+            min={filters.from}
+            onChange={(event) => update({ to: event.target.value || undefined })}
+          />
+        </div>
       </div>
       {active && (
         <button
