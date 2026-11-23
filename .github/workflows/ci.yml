@@ -115,6 +115,45 @@ jobs:
             apps/e2e/test-results/
           retention-days: 7
 
+  stack:
+    name: Stack de producción (Docker + k6)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Crear .env con claves de un solo uso
+        run: |
+          echo "POSTGRES_PASSWORD=$(openssl rand -hex 24)" >> .env
+          echo "JWT_SECRET=$(openssl rand -hex 32)" >> .env
+
+      - name: Construir imágenes y levantar el stack
+        run: docker compose -f docker-compose.prod.yml up -d --build
+
+      - name: Esperar a que Nginx y las APIs estén listas
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:8080/api/v1/health/ready > /dev/null; then
+              echo "Stack listo"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "El stack no respondió a tiempo"
+          exit 1
+
+      - name: Prueba de carga (perfil humo)
+        run: docker compose -f docker-compose.prod.yml --profile load run --rm -e PERFIL=humo k6
+
+      - name: Mostrar logs si algo falla
+        if: failure()
+        run: docker compose -f docker-compose.prod.yml logs --no-color
+
+      - name: Apagar y borrar datos
+        if: always()
+        run: docker compose -f docker-compose.prod.yml down -v
+
   audit:
     name: Dependencias vulnerables
     runs-on: ubuntu-latest

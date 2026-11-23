@@ -125,17 +125,55 @@ npm install
 
 5. Abre http://localhost:5173. La API responde en http://localhost:4000/api/v1/health/ready.
 
+### Modo producción (Docker + Nginx)
+
+La app completa en contenedores: Nginx sirve la web y reparte la API entre dos instancias.
+
+```bash
+cp .env.example .env   # en PowerShell: Copy-Item .env.example .env; luego completa las dos claves
+npm run prod:up        # construye y levanta todo
+```
+
+Abre http://localhost:8080. Detalles, comandos y cómo ver el balanceo en [`docs/infraestructura.md`](docs/infraestructura.md).
+
 ### Pruebas
 
 ```bash
 npm test             # unitarias, API, componentes e integración con PostgreSQL
+npm run test:e2e     # de extremo a extremo en un navegador real, con análisis de accesibilidad
 npm run lint         # análisis estático
 npm run typecheck    # revisión de tipos
 ```
 
+La primera vez, `npm run test:e2e` necesita el navegador de Playwright: `npx playwright install chromium`.
+
 ## 📈 Pruebas de carga y escalabilidad
 
-_Se agregarán cuando la app esté desplegada con Nginx y varias instancias de la API._
+Con [k6](https://k6.io) se simulan personas usando la app a la vez, contra el modo producción (Nginx + 2 instancias de la API + PostgreSQL). Cada usuario virtual abre el dashboard, revisa el historial y a veces registra un gasto.
+
+```bash
+npm run load:humo     # 1 usuario, 30 s: comprobación rápida
+npm run load:carga    # 30 usuarios simultáneos durante 1 minuto
+npm run load:estres   # sube hasta 100 usuarios
+```
+
+La prueba falla si más del 1 % de las peticiones da error o si el 95 % no responde en menos de 500 ms.
+
+**Resultados** (perfil `carga`: 30 usuarios simultáneos durante 2 min 17 s, con todo el stack en Docker Desktop sobre Windows en una sola PC)
+
+| Métrica                              | Resultado                | Criterio |
+| ------------------------------------ | ------------------------ | -------- |
+| Peticiones atendidas                 | 4 195 (≈ 30 por segundo) | —        |
+| Peticiones con error                 | 0 %                      | < 1 %    |
+| Tiempo de respuesta típico (mediana) | 24 ms                    | —        |
+| p95 de todas las peticiones          | 127 ms                   | < 500 ms |
+| p95 de lecturas                      | 112 ms                   | < 400 ms |
+| p95 de escrituras                    | 171 ms                   | < 600 ms |
+| Comprobaciones correctas             | 100 % (4 940 de 4 940)   | > 99 %   |
+
+_p95: el 95 % de las peticiones respondió en ese tiempo o menos._
+
+**Tolerancia a fallos:** durante la prueba de carga se apagó una de las dos instancias de la API. Nginx reintentó en la otra las peticiones que había enviado a la instancia caída, y la prueba terminó sin errores.
 
 ## 🎥 Video
 

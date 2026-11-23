@@ -7,15 +7,13 @@ Simplify es una aplicación web de tres capas: un frontend en React que se ejecu
 ```mermaid
 flowchart LR
     U([Persona usuaria]) -->|HTTPS| N[Nginx<br/>balanceador + archivos de React]
-    N -->|/api, por turnos| A1[API · instancia 1]
-    N -->|/api, por turnos| A2[API · instancia 2]
+    N -->|/api, a la menos ocupada| A1[API · instancia 1]
+    N -->|/api, a la menos ocupada| A2[API · instancia 2]
     A1 --> DB[(PostgreSQL)]
     A2 --> DB
-    N -. /health/ready .-> A1
-    N -. /health/ready .-> A2
 ```
 
-- **Nginx** sirve los archivos compilados de React y reenvía `/api` a las instancias de la API en round-robin. Si una instancia responde 503 en `/api/v1/health/ready`, deja de recibir tráfico.
+- **Nginx** sirve los archivos compilados de React y reenvía `/api` a la instancia de la API con menos conexiones abiertas (`least_conn`). Si una instancia falla (no responde, 502 o 503), la petición se reintenta en otra y la instancia queda apartada unos segundos. Ver [ADR 0005](adr/0005-balanceo-nginx.md) y [`infraestructura.md`](infraestructura.md).
 - **Las instancias de la API son stateless**: no guardan sesiones ni contadores en memoria. Todo el estado compartido (tokens de renovación, intentos de login) vive en PostgreSQL. Por eso cualquier instancia puede atender cualquier petición. Ver [ADR 0004](adr/0004-limite-intentos-sin-redis.md).
 - **En desarrollo** no hay Nginx: Vite (puerto 5173) reenvía `/api` a una sola API (puerto 4000).
 

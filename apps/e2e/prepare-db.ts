@@ -59,7 +59,7 @@ async function prepareDatabase(): Promise<void> {
   } finally {
     await client.end();
   }
-  console.log(`Base de datos E2E lista: ${database}`);
+  process.stdout.write(`Base de datos E2E lista: ${database}\n`);
 }
 
 await prepareDatabase();
