@@ -54,7 +54,7 @@ export default function HistoryPage() {
         <button
           type="button"
           onClick={() => setCreating(true)}
-          className="hidden h-12 items-center gap-2 rounded-full bg-hero px-6 font-semibold text-on-hero md:flex"
+          className="hidden h-12 items-center gap-2 rounded-full bg-hero px-6 hover:bg-hero-hover font-semibold text-on-hero md:flex"
         >
           <PlusIcon />
           Nuevo movimiento
@@ -109,7 +109,7 @@ export default function HistoryPage() {
                 <button
                   type="button"
                   onClick={() => setCreating(true)}
-                  className="h-12 rounded-full bg-hero px-6 font-semibold text-on-hero"
+                  className="h-12 rounded-full bg-hero px-6 hover:bg-hero-hover font-semibold text-on-hero"
                 >
                   Registrar movimiento
                 </button>

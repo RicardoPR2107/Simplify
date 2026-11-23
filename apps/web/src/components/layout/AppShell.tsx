@@ -95,7 +95,7 @@ export function AppShell() {
             <Link
               to="/historial?nuevo=1"
               title="Nuevo movimiento"
-              className="flex h-11 items-center gap-3 whitespace-nowrap rounded-full bg-cta px-4 font-semibold text-cta-text"
+              className="flex h-11 items-center gap-3 whitespace-nowrap rounded-full bg-cta hover:bg-cta-hover px-4 font-semibold text-cta-text"
             >
               <PlusIcon />
               <span className={label}>Nuevo movimiento</span>
@@ -177,7 +177,7 @@ export function AppShell() {
           <Link
             to="/historial?nuevo=1"
             aria-label="Nuevo movimiento"
-            className="flex h-14 items-center justify-center rounded-full bg-cta text-cta-text"
+            className="flex h-14 items-center justify-center rounded-full bg-cta hover:bg-cta-hover text-cta-text"
           >
             <PlusIcon />
           </Link>

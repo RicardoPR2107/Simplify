@@ -55,7 +55,7 @@ export function DeleteMovementDialog({
                 },
               })
             }
-            className="h-12 rounded-full bg-expense px-6 font-semibold text-white disabled:opacity-70"
+            className="h-12 rounded-full bg-danger px-6 font-semibold text-white hover:bg-danger-hover disabled:opacity-70"
           >
             {remove.isPending ? 'Eliminando…' : 'Eliminar'}
           </button>

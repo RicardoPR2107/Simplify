@@ -67,7 +67,7 @@ export function MovementList({ movements, currency, onEdit, onDelete }: Movement
             <button
               type="button"
               onClick={() => onEdit(movement)}
-              className="flex w-full flex-col gap-1 rounded-2xl border border-line bg-card p-4 text-left active:bg-faint"
+              className="flex w-full flex-col gap-1 rounded-2xl border border-line bg-card p-4 text-left hover:bg-faint active:bg-faint"
             >
               <span className="flex w-full items-baseline justify-between gap-3">
                 <span className="truncate font-medium">{movement.description}</span>

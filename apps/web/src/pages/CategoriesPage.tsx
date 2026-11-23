@@ -28,7 +28,7 @@ export default function CategoriesPage() {
         <button
           type="button"
           onClick={() => setCreating(true)}
-          className="flex h-12 items-center gap-2 rounded-full bg-hero px-6 font-semibold text-on-hero"
+          className="flex h-12 items-center gap-2 rounded-full bg-hero px-6 hover:bg-hero-hover font-semibold text-on-hero"
         >
           <PlusIcon />
           Nueva categoría
