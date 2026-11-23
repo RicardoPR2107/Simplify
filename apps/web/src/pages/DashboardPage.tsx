@@ -1,13 +1,11 @@
-import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { EmptyState, Skeleton } from '../components/feedback/feedback';
-import { FormAlert } from '../components/ui/form';
-import { ChevronLeftIcon, ChevronRightIcon } from '../components/ui/icons';
-import { describeError } from '../features/auth/forms';
+import { Loadable, Panel } from '../components/ui/Panel';
 import { useCurrentUser } from '../features/auth/useAuth';
-import { useEvolution, useExpensesByCategory, useMonthSummary } from '../features/dashboard/api';
+import { useCategorySummary, useEvolution, useMonthSummary } from '../features/dashboard/api';
 import { EvolutionChart } from '../features/dashboard/EvolutionChart';
-import { ExpensesByCategory } from '../features/dashboard/ExpensesByCategory';
+import { MonthNavigator } from '../features/dashboard/MonthNavigator';
+import { CategoryBreakdown } from '../features/dashboard/CategoryBreakdown';
 import { periodLabel, useDashboardPeriod } from '../features/dashboard/period';
 import { RecentMovements } from '../features/dashboard/RecentMovements';
 import { SummaryCards } from '../features/dashboard/SummaryCards';
@@ -24,7 +22,7 @@ export default function DashboardPage() {
   const { year, month } = period;
 
   const summary = useMonthSummary(year, month);
-  const categories = useExpensesByCategory(year, month);
+  const categories = useCategorySummary(year, month, 'EXPENSE');
   const evolution = useEvolution(year, month);
   const recent = useMovements({ page: 1, sortBy: 'date', order: 'desc' });
 
@@ -45,31 +43,7 @@ export default function DashboardPage() {
           <p className="text-muted">Así van tus finanzas.</p>
         </div>
         {!hasNoMovements && (
-          <nav
-            aria-label="Mes del resumen"
-            className="flex items-center gap-1 rounded-full border border-line bg-card p-1"
-          >
-            <button
-              type="button"
-              onClick={previous}
-              aria-label="Mes anterior"
-              className="flex size-10 items-center justify-center rounded-full hover:bg-faint"
-            >
-              <ChevronLeftIcon width={18} height={18} />
-            </button>
-            <p aria-live="polite" className="min-w-36 text-center font-semibold">
-              {label}
-            </p>
-            <button
-              type="button"
-              onClick={next}
-              disabled={isCurrent}
-              aria-label="Mes siguiente"
-              className="flex size-10 items-center justify-center rounded-full enabled:hover:bg-faint disabled:opacity-30"
-            >
-              <ChevronRightIcon width={18} height={18} />
-            </button>
-          </nav>
+          <MonthNavigator label={label} isCurrent={isCurrent} onPrevious={previous} onNext={next} />
         )}
       </div>
 
@@ -125,11 +99,7 @@ export default function DashboardPage() {
                       No registraste gastos en {label.toLowerCase()}.
                     </p>
                   ) : (
-                    <ExpensesByCategory
-                      summary={data}
-                      currency={currency}
-                      monthQuery={monthQuery}
-                    />
+                    <CategoryBreakdown summary={data} currency={currency} monthQuery={monthQuery} />
                   )
                 }
               </Loadable>
@@ -154,67 +124,4 @@ export default function DashboardPage() {
       )}
     </div>
   );
-}
-
-function Panel({
-  title,
-  action,
-  children,
-}: {
-  title: string;
-  action?: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <section className="flex flex-col gap-5 rounded-card border border-line bg-card p-6">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">{title}</h2>
-        {action}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-interface QueryLike<T> {
-  data: T | undefined;
-  isPending: boolean;
-  isError: boolean;
-  error: unknown;
-  refetch: () => unknown;
-}
-
-/** Cada bloque carga por separado: si uno falla, los demás siguen visibles y ese ofrece reintentar. */
-function Loadable<T>({
-  query,
-  skeleton,
-  children,
-}: {
-  query: QueryLike<T>;
-  skeleton: ReactNode;
-  children: (data: T) => ReactNode;
-}) {
-  if (query.isPending) {
-    return (
-      <div role="status">
-        <span className="sr-only">Cargando…</span>
-        {skeleton}
-      </div>
-    );
-  }
-  if (query.isError || query.data === undefined) {
-    return (
-      <div className="flex flex-col items-start gap-3">
-        <FormAlert>{describeError(query.error)}</FormAlert>
-        <button
-          type="button"
-          onClick={() => void query.refetch()}
-          className="h-10 rounded-full border border-line px-4 text-sm font-semibold hover:bg-faint"
-        >
-          Reintentar
-        </button>
-      </div>
-    );
-  }
-  return children(query.data);
 }

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { formatDate, formatMoney, normalizeAmountInput, todayISO } from './format';
+import {
+  formatCompactMoney,
+  formatDate,
+  formatMoney,
+  normalizeAmountInput,
+  todayISO,
+} from './format';
 
 describe('Formato de dinero y fechas', () => {
   it('formatea importes con 2 decimales y símbolo de la moneda', () => {
@@ -19,6 +25,11 @@ describe('Formato de dinero y fechas', () => {
 
   it('devuelve la fecha local de hoy', () => {
     expect(todayISO(new Date(2026, 0, 5, 23, 30))).toBe('2026-01-05');
+  });
+
+  it('abrevia importes para gráficos sin decimales innecesarios', () => {
+    expect(formatCompactMoney(849.6, 'PEN')).toMatch(/S\/\s?850$/);
+    expect(formatCompactMoney(1309.7, 'PEN')).toMatch(/1\.3\s?K/);
   });
 
   it('acepta la coma decimal al escribir un importe', () => {

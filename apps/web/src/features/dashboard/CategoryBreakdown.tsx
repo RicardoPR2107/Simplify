@@ -6,11 +6,11 @@ import { formatMoney } from '../../lib/format';
 const MAX_ROWS = 6;
 
 /**
- * En qué se va el dinero del mes: barras horizontales ordenadas de mayor a menor.
- * Un solo color (todas son gastos); el nombre, el importe y el porcentaje van escritos en cada fila,
+ * Reparto del mes por categoría (gastos o ingresos): barras horizontales de mayor a menor.
+ * Un solo color por tipo; el nombre, el importe y el porcentaje van escritos en cada fila,
  * así que la información no depende del color ni del tamaño de la barra.
  */
-export function ExpensesByCategory({
+export function CategoryBreakdown({
   summary,
   currency,
   monthQuery,
@@ -20,6 +20,7 @@ export function ExpensesByCategory({
   /** Filtro del historial para el mes mostrado, por ejemplo "from=2026-11-01&to=2026-11-30". */
   monthQuery: string;
 }) {
+  const income = summary.type === 'INCOME';
   // Agrupar una sola categoría en "Otras" no ahorra espacio: solo se agrupa a partir de dos.
   const fits = summary.items.length <= MAX_ROWS + 1;
   const rows = fits ? [...summary.items] : summary.items.slice(0, MAX_ROWS);
@@ -37,13 +38,16 @@ export function ExpensesByCategory({
   const max = Math.max(...rows.map((row) => row.percentage), 1);
 
   return (
-    <ul aria-label="Gastos por categoría" className="flex flex-col gap-4">
+    <ul
+      aria-label={income ? 'Ingresos por categoría' : 'Gastos por categoría'}
+      className="flex flex-col gap-4"
+    >
       {rows.map((row) => (
         <li key={row.categoryId || 'otras'} className="flex flex-col gap-1.5">
           <div className="flex items-baseline justify-between gap-3 text-sm">
             {row.categoryId ? (
               <Link
-                to={`/historial?type=EXPENSE&categoryId=${row.categoryId}&${monthQuery}`}
+                to={`/historial?type=${summary.type}&categoryId=${row.categoryId}&${monthQuery}`}
                 className="truncate font-medium underline-offset-4 hover:underline"
               >
                 {row.name}
@@ -60,7 +64,7 @@ export function ExpensesByCategory({
           </div>
           <div aria-hidden="true" className="h-2 overflow-hidden rounded-full bg-faint">
             <div
-              className="h-full rounded-full bg-chart-expense"
+              className={`h-full rounded-full ${income ? 'bg-chart-income' : 'bg-chart-expense'}`}
               style={{ width: `${(row.percentage / max) * 100}%` }}
             />
           </div>
