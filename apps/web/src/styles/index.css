@@ -32,7 +32,7 @@
   --danger-hover: #8b4630;
   --income: #2e6b52;
   --income-bg: #e5f1da;
-  --expense: #a4553a;
+  --expense: #97492f;
   --expense-bg: #f6e7e0;
   /* Colores de los gráficos, validados para daltonismo (scripts/validate_palette.js):
      ΔE 10.1 en el peor caso (deuteranopía) sobre la tarjeta clara. */

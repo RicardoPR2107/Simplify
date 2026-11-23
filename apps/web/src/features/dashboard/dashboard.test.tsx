@@ -141,7 +141,9 @@ describe('Dashboard', () => {
     expect(within(table).getAllByRole('row')).toHaveLength(7);
 
     const label = periodLabel(now);
-    const monthButton = screen.getByRole('button', { name: new RegExp(`^${label}: ingresos`) });
+    const monthButton = screen.getByRole('button', {
+      name: new RegExp(`^${periodLabel(now, 'short')}\\s*${now.year}: ingresos`),
+    });
     await userEvent.tab();
     monthButton.focus();
     await waitFor(() => expect(screen.getAllByText(label).length).toBeGreaterThan(1));
